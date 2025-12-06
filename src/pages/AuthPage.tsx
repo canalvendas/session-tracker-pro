@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Leaf } from "lucide-react";
 import { z } from "zod";
 import logoTeraDay from "@/assets/logo-teraday-transparent.png";
 
@@ -109,11 +109,16 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
     <div className="min-h-screen gradient-surface flex flex-col items-center justify-center p-5">
       {/* Logo */}
       <div className="mb-8 text-center animate-fade-in">
-        <img 
-          src={logoTeraDay} 
-          alt="TeraDay - Controle de atendimentos para terapeutas" 
-          className="h-28 w-auto mx-auto"
-        />
+        <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-primary flex items-center justify-center shadow-glow">
+          <Leaf className="h-10 w-10 text-primary-foreground" />
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          <span className="text-primary-foreground">Tera</span>
+          <span className="text-primary-foreground/80">Day</span>
+        </h1>
+        <p className="text-sm text-primary-foreground/70 mt-1">
+          Controle de atendimentos para terapeutas
+        </p>
       </div>
 
       {/* Auth Card */}
