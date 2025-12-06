@@ -48,6 +48,7 @@ function AppContent() {
     updateClinic,
     deleteClinic,
     getDefaultClinic,
+    getClinicById,
   } = useSupabaseSessionStore(user);
 
   const stats = getStats();
@@ -102,6 +103,8 @@ function AppContent() {
               addSession={addSession}
               deleteSession={deleteSession}
               sessionValue={settings.sessionValue}
+              clinics={clinics}
+              getClinicById={getClinicById}
             />
           }
         />
@@ -125,6 +128,8 @@ function AppContent() {
               deleteSession={deleteSession}
               updateSession={updateSession}
               sessionValue={settings.sessionValue}
+              clinics={clinics}
+              getClinicById={getClinicById}
             />
           }
         />

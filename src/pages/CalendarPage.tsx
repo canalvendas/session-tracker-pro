@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { SessionCalendar } from "@/components/SessionCalendar";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Clinic } from "@/types/clinic";
 
 interface SessionRecord {
   id: string;
   date: string;
   count: number;
   created_at: string;
+  clinic_id: string | null;
+  session_value: number | null;
 }
 
 interface CalendarPageProps {
@@ -21,6 +24,8 @@ interface CalendarPageProps {
   addSession: (date: Date, count: number) => void;
   deleteSession: (id: string) => void;
   sessionValue: number;
+  clinics: Clinic[];
+  getClinicById: (id: string) => Clinic | undefined;
 }
 
 export function CalendarPage({
@@ -30,13 +35,26 @@ export function CalendarPage({
   addSession,
   deleteSession,
   sessionValue,
+  clinics,
+  getClinicById,
 }: CalendarPageProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { toast } = useToast();
 
   const sessions = selectedDate ? getSessionsForDate(selectedDate) : [];
   const totalSessions = selectedDate ? getTotalForDate(selectedDate) : 0;
-  const totalValue = totalSessions * sessionValue;
+  
+  // Calculate total value based on individual session values
+  const totalValue = sessions.reduce((sum, session) => {
+    const value = session.session_value ?? sessionValue;
+    return sum + (session.count * value);
+  }, 0);
+
+  // Get clinic info for a session
+  const getSessionClinic = (session: SessionRecord): Clinic | undefined => {
+    if (!session.clinic_id) return undefined;
+    return getClinicById(session.clinic_id);
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -121,36 +139,66 @@ export function CalendarPage({
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Registros do dia
                 </h3>
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-primary">
-                          {session.count}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {session.count} {session.count === 1 ? 'sessão' : 'sessões'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatCurrency(session.count * sessionValue)}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleDeleteSession(session.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                {sessions.map((session) => {
+                  const clinic = getSessionClinic(session);
+                  const sessionVal = session.session_value ?? sessionValue;
+                  
+                  return (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="h-8 w-8 rounded-full flex items-center justify-center"
+                          style={{ 
+                            backgroundColor: clinic ? `${clinic.color}20` : 'hsl(var(--primary) / 0.1)',
+                          }}
+                        >
+                          <span 
+                            className="text-sm font-semibold"
+                            style={{ color: clinic?.color || 'hsl(var(--primary))' }}
+                          >
+                            {session.count}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground">
+                              {session.count} {session.count === 1 ? 'sessão' : 'sessões'}
+                            </p>
+                            {clinic && (
+                              <span 
+                                className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full"
+                                style={{ 
+                                  backgroundColor: `${clinic.color}20`,
+                                  color: clinic.color 
+                                }}
+                              >
+                                <span 
+                                  className="h-1.5 w-1.5 rounded-full"
+                                  style={{ backgroundColor: clinic.color }}
+                                />
+                                {clinic.name}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCurrency(session.count * sessionVal)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleDeleteSession(session.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-6">

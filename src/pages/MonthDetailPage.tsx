@@ -32,12 +32,15 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DayRecord } from "@/types/session";
+import { Clinic } from "@/types/clinic";
 
 interface Session {
   id: string;
   date: string;
   count: number;
   created_at: string;
+  clinic_id: string | null;
+  session_value: number | null;
 }
 
 interface MonthDetailPageProps {
@@ -46,6 +49,8 @@ interface MonthDetailPageProps {
   deleteSession: (id: string) => Promise<void>;
   updateSession: (id: string, count: number) => Promise<void>;
   sessionValue: number;
+  clinics: Clinic[];
+  getClinicById: (id: string) => Clinic | undefined;
 }
 
 export function MonthDetailPage({
@@ -54,6 +59,8 @@ export function MonthDetailPage({
   deleteSession,
   updateSession,
   sessionValue,
+  clinics,
+  getClinicById,
 }: MonthDetailPageProps) {
   const navigate = useNavigate();
   const { year, month } = useParams<{ year: string; month: string }>();
@@ -197,45 +204,71 @@ export function MonthDetailPage({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <div className="ml-7 mt-2 space-y-2">
-                        {sessionsForDay.map((session, index) => (
-                          <div
-                            key={session.id}
-                            className="flex items-center justify-between p-3 bg-background border border-border rounded-lg"
-                          >
-                            <div>
-                              <p className="text-sm font-medium text-foreground">
-                                Registro {index + 1}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {session.count} {session.count === 1 ? 'sessão' : 'sessões'} • {formatCurrency(session.count * sessionValue)}
-                              </p>
+                        {sessionsForDay.map((session, index) => {
+                          const clinic = session.clinic_id ? getClinicById(session.clinic_id) : undefined;
+                          const sessionVal = session.session_value ?? sessionValue;
+                          
+                          return (
+                            <div
+                              key={session.id}
+                              className="flex items-center justify-between p-3 bg-background border border-border rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                {clinic && (
+                                  <div 
+                                    className="h-2 w-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: clinic.color }}
+                                  />
+                                )}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-foreground">
+                                      Registro {index + 1}
+                                    </p>
+                                    {clinic && (
+                                      <span 
+                                        className="text-xs px-1.5 py-0.5 rounded"
+                                        style={{ 
+                                          backgroundColor: `${clinic.color}20`,
+                                          color: clinic.color 
+                                        }}
+                                      >
+                                        {clinic.name}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {session.count} {session.count === 1 ? 'sessão' : 'sessões'} • {formatCurrency(session.count * sessionVal)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditClick(session);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(session);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditClick(session);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(session);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
