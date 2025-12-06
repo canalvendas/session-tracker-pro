@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface AddSessionSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddSession: (date: Date, count: number) => void;
+  onAddSession: (date: Date, count: number) => Promise<any>;
   sessionValue: number;
 }
 
@@ -25,6 +25,7 @@ export function AddSessionSheet({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [count, setCount] = useState(1);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const formatCurrency = (amount: number) => {
@@ -34,23 +35,49 @@ export function AddSessionSheet({
     }).format(amount);
   };
 
-  const handleSubmit = () => {
-    onAddSession(selectedDate, count);
-    toast({
-      title: "Sessão registrada!",
-      description: `${count} ${count === 1 ? 'sessão adicionada' : 'sessões adicionadas'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}`,
-    });
-    setCount(1);
-    onOpenChange(false);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await onAddSession(selectedDate, count);
+      if (result) {
+        toast({
+          title: "Sessão registrada!",
+          description: `${count} ${count === 1 ? 'sessão adicionada' : 'sessões adicionadas'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}`,
+        });
+        setCount(1);
+        onOpenChange(false);
+      } else {
+        toast({
+          title: "Erro ao registrar",
+          description: "Não foi possível salvar a sessão. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleQuickAdd = () => {
-    onAddSession(new Date(), 1);
-    toast({
-      title: "Sessão registrada!",
-      description: "1 sessão adicionada para hoje",
-    });
-    onOpenChange(false);
+  const handleQuickAdd = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await onAddSession(new Date(), 1);
+      if (result) {
+        toast({
+          title: "Sessão registrada!",
+          description: "1 sessão adicionada para hoje",
+        });
+        onOpenChange(false);
+      } else {
+        toast({
+          title: "Erro ao registrar",
+          description: "Não foi possível salvar a sessão. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,8 +94,13 @@ export function AddSessionSheet({
             size="lg" 
             className="w-full"
             onClick={handleQuickAdd}
+            disabled={isSubmitting}
           >
-            <Plus className="h-5 w-5 mr-2" />
+            {isSubmitting ? (
+              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            ) : (
+              <Plus className="h-5 w-5 mr-2" />
+            )}
             Adicionar 1 sessão agora
           </Button>
 
@@ -169,8 +201,9 @@ export function AddSessionSheet({
             size="xl" 
             className="w-full"
             onClick={handleSubmit}
+            disabled={isSubmitting}
           >
-            Registrar {count} {count === 1 ? 'sessão' : 'sessões'}
+            {isSubmitting ? "Salvando..." : `Registrar ${count} ${count === 1 ? 'sessão' : 'sessões'}`}
           </Button>
         </div>
       </SheetContent>
