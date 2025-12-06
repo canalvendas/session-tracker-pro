@@ -61,7 +61,7 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
     // Se for erro de sessão, prossegue com logout normalmente
     if (isSessionError) {
       localStorage.clear();
-      window.location.href = '/auth';
+      window.location.href = '/';
       return;
     }
     
