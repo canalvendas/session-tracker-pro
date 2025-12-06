@@ -239,6 +239,11 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
           <LogOut className="h-5 w-5 mr-2" />
           Sair da conta
         </Button>
+
+        {/* Version */}
+        <p className="text-center text-xs text-muted-foreground pt-4">
+          TeraDay v1.1.0
+        </p>
       </main>
     </div>
   );
