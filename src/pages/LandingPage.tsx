@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   Leaf, 
@@ -21,6 +22,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { PixPaymentModal } from "@/components/PixPaymentModal";
 
 const features = [
   {
@@ -89,25 +91,29 @@ const testimonials = [
 const steps = [
   {
     number: "01",
-    title: "Crie sua conta",
-    description: "Cadastre-se gratuitamente em menos de 1 minuto"
+    title: "Efetue o pagamento",
+    description: "Pague R$14,99 via PIX e envie o comprovante"
   },
   {
     number: "02",
-    title: "Registre suas sessões",
-    description: "Adicione sessões diariamente com poucos cliques"
+    title: "Receba seu acesso",
+    description: "Liberamos sua conta em até 24 horas"
   },
   {
     number: "03",
-    title: "Acompanhe resultados",
-    description: "Visualize estatísticas e baixe relatórios"
+    title: "Comece a usar",
+    description: "Registre sessões e acompanhe resultados"
   }
 ];
 
 const faqs = [
   {
-    question: "O TeraDay é gratuito?",
-    answer: "Sim! O TeraDay é 100% gratuito. Todas as funcionalidades estão disponíveis sem nenhum custo."
+    question: "Qual o valor do TeraDay?",
+    answer: "O TeraDay custa R$14,99 em um pagamento único via PIX. Você terá acesso vitalício a todas as funcionalidades, sem mensalidades ou taxas adicionais."
+  },
+  {
+    question: "Como funciona o pagamento?",
+    answer: "O pagamento é feito via PIX. Basta escanear o QR Code ou copiar a chave PIX, efetuar o pagamento e enviar o comprovante pelo WhatsApp. Seu acesso será liberado em até 24 horas."
   },
   {
     question: "Funciona offline?",
@@ -135,10 +141,12 @@ const benefits = [
   "Modo escuro/claro",
   "Dados na nuvem",
   "PWA mobile",
-  "Suporte gratuito"
+  "Suporte incluso"
 ];
 
 export function LandingPage() {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#0a0f0d] text-white overflow-x-hidden">
       {/* Gradient Background Effects */}
@@ -173,7 +181,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
             <Leaf className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary">100% Gratuito</span>
+            <span className="text-sm text-primary">Acesso Vitalício por R$14,99</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
@@ -190,12 +198,14 @@ export function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto">
-                Começar Agora - É Grátis
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto"
+              onClick={() => setIsPaymentModalOpen(true)}
+            >
+              Comprar Agora - R$14,99
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
             <a href="#funcionalidades">
               <Button size="lg" variant="outline" className="border-gray-700 text-white hover:bg-white/5 px-8 py-6 text-lg w-full sm:w-auto">
                 Ver Funcionalidades
@@ -338,25 +348,25 @@ export function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Preço?
-              <span className="text-primary"> Gratuito!</span>
+              Investimento
+              <span className="text-primary"> Único</span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Todas as funcionalidades sem pagar nada. Sem pegadinha.
+              Pague uma vez e tenha acesso para sempre. Sem mensalidades.
             </p>
           </div>
 
           <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/40 border border-primary/30 rounded-2xl p-8 md:p-12 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary text-white text-sm font-medium px-4 py-1 rounded-bl-lg">
-              100% Grátis
+              Acesso Vitalício
             </div>
             
             <div className="text-center mb-8">
               <div className="flex items-baseline justify-center gap-2 mb-2">
-                <span className="text-5xl md:text-6xl font-bold">R$ 0</span>
-                <span className="text-gray-400">/mês</span>
+                <span className="text-5xl md:text-6xl font-bold">R$ 14,99</span>
+                <span className="text-gray-400">/ único</span>
               </div>
-              <p className="text-gray-400">Para sempre</p>
+              <p className="text-gray-400">Pagamento via PIX</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -371,12 +381,14 @@ export function LandingPage() {
             </div>
 
             <div className="text-center">
-              <Link to="/auth">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg">
-                  Criar Conta Grátis
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
+                onClick={() => setIsPaymentModalOpen(true)}
+              >
+                Comprar Agora
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
           </div>
         </div>
@@ -427,12 +439,14 @@ export function LandingPage() {
             Junte-se a centenas de terapeutas que já simplificaram sua rotina com o TeraDay.
           </p>
           
-          <Link to="/auth">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg">
-              Comece Agora - É Grátis
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
+            onClick={() => setIsPaymentModalOpen(true)}
+          >
+            Comprar Agora - R$14,99
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
         </div>
       </section>
 
@@ -443,16 +457,22 @@ export function LandingPage() {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center">
               <Leaf className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold">
+            <span className="font-semibold">
               <span className="text-primary">Tera</span>
               <span className="text-primary/70">Day</span>
             </span>
           </div>
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} TeraDay. Todos os direitos reservados.
+          <p className="text-gray-400 text-sm">
+            © 2024 TeraDay. Todos os direitos reservados.
           </p>
         </div>
       </footer>
+
+      {/* PIX Payment Modal */}
+      <PixPaymentModal 
+        open={isPaymentModalOpen} 
+        onOpenChange={setIsPaymentModalOpen} 
+      />
     </div>
   );
 }
