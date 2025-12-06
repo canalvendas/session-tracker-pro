@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Clinic } from '@/types/clinic';
 
 interface DayRecord {
   date: string;
@@ -15,9 +16,16 @@ interface WeekRecord {
   value: number;
 }
 
+interface ClinicBreakdown {
+  clinic: Clinic | null;
+  sessions: number;
+  value: number;
+}
+
 interface GenerateReportParams {
   monthlyHistory: DayRecord[];
   weeklyHistory: WeekRecord[];
+  clinicBreakdown: ClinicBreakdown[];
   year: number;
   month: number;
   therapistName?: string;
@@ -35,9 +43,18 @@ const monthNames = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
+// Convert hex color to RGB
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result 
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [61, 139, 125]; // Default primary color
+};
+
 export function generateMonthlyReport({
   monthlyHistory,
   weeklyHistory,
+  clinicBreakdown,
   year,
   month,
   therapistName,
@@ -103,8 +120,71 @@ export function generateMonthlyReport({
 
   yPosition += 50;
 
+  // Clinic Breakdown Section (NEW)
+  if (clinicBreakdown.length > 0) {
+    doc.setTextColor(...textColor);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Faturamento por Clínica', 15, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    clinicBreakdown.forEach((item) => {
+      const clinicName = item.clinic?.name || 'Sem clínica';
+      const clinicColor = item.clinic ? hexToRgb(item.clinic.color) : mutedColor;
+      const percentage = totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : '0';
+      
+      // Background bar showing percentage
+      const barWidth = totalValue > 0 ? ((item.value / totalValue) * (pageWidth - 30)) : 0;
+      doc.setFillColor(250, 251, 250);
+      doc.roundedRect(15, yPosition - 4, pageWidth - 30, 14, 2, 2, 'F');
+      
+      // Percentage fill bar with lighter color
+      if (barWidth > 0) {
+        // Create a lighter version of the clinic color
+        const lightR = Math.min(255, clinicColor[0] + Math.floor((255 - clinicColor[0]) * 0.85));
+        const lightG = Math.min(255, clinicColor[1] + Math.floor((255 - clinicColor[1]) * 0.85));
+        const lightB = Math.min(255, clinicColor[2] + Math.floor((255 - clinicColor[2]) * 0.85));
+        doc.setFillColor(lightR, lightG, lightB);
+        doc.roundedRect(15, yPosition - 4, barWidth, 14, 2, 2, 'F');
+      }
+      
+      // Color indicator dot
+      doc.setFillColor(...clinicColor);
+      doc.circle(22, yPosition + 3, 2.5, 'F');
+      
+      // Clinic name
+      doc.setTextColor(...textColor);
+      doc.setFont('helvetica', 'bold');
+      doc.text(clinicName, 28, yPosition + 5);
+      
+      // Sessions count
+      doc.setTextColor(...mutedColor);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${item.sessions} ${item.sessions === 1 ? 'sessão' : 'sessões'} (${percentage}%)`, 90, yPosition + 5);
+      
+      // Value
+      doc.setTextColor(...clinicColor);
+      doc.setFont('helvetica', 'bold');
+      doc.text(formatCurrency(item.value), pageWidth - 20, yPosition + 5, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      
+      yPosition += 16;
+    });
+
+    yPosition += 8;
+  }
+
   // Weekly Summary Section
   if (weeklyHistory.length > 0) {
+    // Check if we need a new page
+    if (yPosition > 220) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
     doc.setTextColor(...textColor);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
