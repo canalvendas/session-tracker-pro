@@ -55,7 +55,7 @@ export function useSessionStore() {
     }
   }, [settings, isLoaded]);
 
-  const addSession = useCallback((date: Date, count: number = 1) => {
+  const addSession = useCallback(async (date: Date, count: number = 1): Promise<Session> => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const newSession: Session = {
       id: crypto.randomUUID(),
