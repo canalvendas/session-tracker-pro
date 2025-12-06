@@ -27,6 +27,7 @@ function AppContent() {
   
   const {
     settings,
+    profile,
     addSession,
     deleteSession,
     updateSession,
@@ -71,7 +72,7 @@ function AppContent() {
     <div className="min-h-screen">
       <PWAInstallPrompt />
       <Routes>
-        <Route path="/" element={<Dashboard stats={stats} />} />
+        <Route path="/" element={<Dashboard stats={stats} therapistName={profile.full_name} />} />
         <Route
           path="/calendar"
           element={

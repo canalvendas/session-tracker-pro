@@ -11,11 +11,13 @@ interface DashboardProps {
     weekly: { sessions: number; value: number };
     monthly: { sessions: number; value: number };
   };
+  therapistName?: string | null;
 }
 
-export function Dashboard({ stats }: DashboardProps) {
+export function Dashboard({ stats, therapistName }: DashboardProps) {
   const navigate = useNavigate();
   const today = new Date();
+  const firstName = therapistName?.split(' ')[0];
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -28,6 +30,11 @@ export function Dashboard({ stats }: DashboardProps) {
     <div className="min-h-screen gradient-surface pb-32">
       {/* Header */}
       <header className="px-5 pt-12 pb-6">
+        {firstName && (
+          <p className="text-lg font-semibold text-foreground mb-2">
+            Olá, {firstName}! 👋
+          </p>
+        )}
         <p className="text-sm text-muted-foreground font-medium mb-1">
           {format(today, "EEEE", { locale: ptBR })}
         </p>
