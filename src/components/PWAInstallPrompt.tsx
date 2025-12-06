@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { X, Download, Share, MoreVertical, Plus, Heart } from "lucide-react";
+import { X, Download, Share, MoreVertical, Plus } from "lucide-react";
+import logoTeraDay from "@/assets/logo-teraday-transparent.png";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -124,10 +125,14 @@ export function PWAInstallPrompt() {
           <>
             {/* App Icon */}
             <div className="flex flex-col items-center text-center mb-6">
-              <div className="h-20 w-20 rounded-2xl gradient-primary flex items-center justify-center shadow-glow mb-4">
-                <Heart className="h-10 w-10 text-primary-foreground" />
-              </div>
-              <h2 className="text-xl font-bold text-foreground">Instalar Sessões</h2>
+              <img 
+                src={logoTeraDay} 
+                alt="TeraDay" 
+                className="h-20 w-20 rounded-2xl shadow-glow mb-4 object-contain"
+              />
+              <h2 className="text-xl font-bold text-foreground">
+                Instalar <span className="text-primary">Tera</span><span className="text-primary/70">Day</span>
+              </h2>
               <p className="text-sm text-muted-foreground mt-2 max-w-xs">
                 Instale o app para acesso rápido, funcionamento offline e melhor experiência!
               </p>
