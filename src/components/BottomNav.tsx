@@ -19,7 +19,7 @@ export function BottomNav({ onAddClick }: BottomNavProps) {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50 safe-area-pb">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-lg safe-area-pb">
       <div className="mx-auto max-w-lg px-2">
         <div className="relative flex items-center justify-around py-2">
           {navItems.slice(0, 2).map((item) => {
