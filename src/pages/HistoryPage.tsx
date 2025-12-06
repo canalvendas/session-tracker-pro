@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, getMonth, getYear } from "date-fns";
+import { format, getMonth, getYear, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -180,7 +180,7 @@ export function HistoryPage({
                     >
                       <div>
                         <p className="text-sm font-semibold text-foreground capitalize">
-                          {format(new Date(day.date), "EEE, d 'de' MMM", { locale: ptBR })}
+                          {format(parseISO(day.date), "EEE, d 'de' MMM", { locale: ptBR })}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {day.sessions} {day.sessions === 1 ? 'sessão' : 'sessões'}
