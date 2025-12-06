@@ -18,6 +18,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { AuthPage } from "@/pages/AuthPage";
 import { LandingPage } from "@/pages/LandingPage";
 import { PendingAccessPage } from "@/pages/PendingAccessPage";
+import { AdminPage } from "@/pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -132,6 +133,7 @@ function AppContent() {
             />
           }
         />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/auth" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
