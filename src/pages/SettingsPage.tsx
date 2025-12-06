@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { DollarSign, Calendar, Save, LogOut, Moon, Sun, Monitor } from "lucide-react";
+import { DollarSign, Calendar, Save, LogOut, Moon, Sun, Monitor, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Settings {
   sessionValue: number;
@@ -23,8 +25,24 @@ interface SettingsPageProps {
 export function SettingsPage({ settings, updateSettings, signOut }: SettingsPageProps) {
   const [sessionValue, setSessionValue] = useState(settings.sessionValue.toString());
   const [weekStartsOn, setWeekStartsOn] = useState<"0" | "1">(settings.weekStartsOn.toString() as "0" | "1");
+  const [isAdmin, setIsAdmin] = useState(false);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.rpc('has_role', { 
+          _user_id: user.id, 
+          _role: 'admin' 
+        });
+        setIsAdmin(data === true);
+      }
+    };
+    checkAdminRole();
+  }, []);
 
   const handleSave = () => {
     const value = parseFloat(sessionValue);
@@ -219,6 +237,33 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
             </button>
           </div>
         </Card>
+
+        {/* Admin Panel Link - Only visible to admins */}
+        {isAdmin && (
+          <Card variant="elevated">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Painel Admin
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Gerencie usuários e acessos
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate('/admin')}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Acessar Painel Admin
+            </Button>
+          </Card>
+        )}
 
         {/* Info Card */}
         <Card variant="glass" className="border-primary/20 bg-primary/5">
