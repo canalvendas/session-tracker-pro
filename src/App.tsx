@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSupabaseSessionStore } from "@/hooks/useSupabaseSessionStore";
+import { usePWAUpdate } from "@/hooks/usePWAUpdate";
 import { BottomNav } from "@/components/BottomNav";
 import { AddSessionSheet } from "@/components/AddSessionSheet";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -21,6 +22,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  usePWAUpdate(); // Monitora atualizações do PWA
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   
   const {
