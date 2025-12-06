@@ -50,13 +50,20 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
 
   const handleSignOut = async () => {
     const { error } = await signOut();
-    if (error) {
+    
+    // session_not_found significa que a sessão já está inválida no servidor
+    // Não é realmente um erro - podemos continuar com o logout
+    if (error && error.code !== 'session_not_found') {
       toast({
         title: "Erro ao sair",
         description: error.message,
         variant: "destructive",
       });
+      return;
     }
+    
+    // Redireciona para a página de login
+    window.location.href = '/auth';
   };
 
   const formatCurrency = (amount: number) => {
