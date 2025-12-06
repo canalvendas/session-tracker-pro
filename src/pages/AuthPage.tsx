@@ -113,10 +113,10 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
           <Leaf className="h-10 w-10 text-primary-foreground" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">
-          <span className="text-primary-foreground">Tera</span>
-          <span className="text-primary-foreground/80">Day</span>
+          <span className="text-primary">Tera</span>
+          <span className="text-primary/70">Day</span>
         </h1>
-        <p className="text-sm text-primary-foreground/70 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Controle de atendimentos para terapeutas
         </p>
       </div>
