@@ -95,7 +95,7 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
         }
         toast({
           title: "Conta criada!",
-          description: "Bem-vindo ao Sessões",
+          description: "Bem-vindo ao TeraDay",
         });
         navigate("/");
       }
@@ -111,7 +111,7 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
         <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
           <Heart className="h-8 w-8 text-primary-foreground" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Sessões</h1>
+        <h1 className="text-2xl font-bold text-foreground">TeraDay</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Controle de atendimentos para terapeutas
         </p>
