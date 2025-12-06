@@ -52,8 +52,23 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      // Mesmo com erro, limpa o estado local
+      // session_not_found significa que já está deslogado no servidor
+      if (error?.code === 'session_not_found' || !error) {
+        setUser(null);
+        setSession(null);
+      }
+      
+      return { error };
+    } catch (e: any) {
+      // Em caso de erro de rede, ainda limpa localmente
+      setUser(null);
+      setSession(null);
+      return { error: e };
+    }
   }, []);
 
   return {
