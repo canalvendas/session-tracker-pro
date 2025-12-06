@@ -16,6 +16,7 @@ import { HistoryPage } from "@/pages/HistoryPage";
 import { MonthDetailPage } from "@/pages/MonthDetailPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AuthPage } from "@/pages/AuthPage";
+import { LandingPage } from "@/pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,8 +62,9 @@ function AppContent() {
       <>
         <PWAInstallPrompt />
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage signIn={signIn} signUp={signUp} />} />
-          <Route path="*" element={<Navigate to="/auth" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>
     );
