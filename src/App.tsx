@@ -12,6 +12,7 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Dashboard } from "@/pages/Dashboard";
 import { CalendarPage } from "@/pages/CalendarPage";
 import { HistoryPage } from "@/pages/HistoryPage";
+import { MonthDetailPage } from "@/pages/MonthDetailPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AuthPage } from "@/pages/AuthPage";
 import NotFound from "./pages/NotFound";
@@ -26,6 +27,7 @@ function AppContent() {
     settings,
     addSession,
     deleteSession,
+    updateSession,
     getSessionsForDate,
     getTotalForDate,
     getStats,
@@ -89,6 +91,18 @@ function AppContent() {
               getWeeklyHistory={getWeeklyHistory}
               getYearlyHistory={getYearlyHistory}
               therapistName={user?.user_metadata?.full_name}
+            />
+          }
+        />
+        <Route
+          path="/history/month/:year/:month"
+          element={
+            <MonthDetailPage
+              getMonthlyHistory={getMonthlyHistory}
+              getSessionsForDate={getSessionsForDate}
+              deleteSession={deleteSession}
+              updateSession={updateSession}
+              sessionValue={settings.sessionValue}
             />
           }
         />
