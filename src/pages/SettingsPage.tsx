@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { DollarSign, Calendar, Save, LogOut } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { DollarSign, Calendar, Save, LogOut, Moon, Sun, Monitor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Settings {
@@ -21,6 +23,7 @@ interface SettingsPageProps {
 export function SettingsPage({ settings, updateSettings, signOut }: SettingsPageProps) {
   const [sessionValue, setSessionValue] = useState(settings.sessionValue.toString());
   const [weekStartsOn, setWeekStartsOn] = useState<"0" | "1">(settings.weekStartsOn.toString() as "0" | "1");
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
   const handleSave = () => {
@@ -144,6 +147,63 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
               </Label>
             </div>
           </RadioGroup>
+        </Card>
+
+        {/* Theme Settings */}
+        <Card variant="elevated">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              {theme === "dark" ? (
+                <Moon className="h-5 w-5 text-primary" />
+              ) : (
+                <Sun className="h-5 w-5 text-primary" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                Aparência
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Escolha o tema do aplicativo
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => setTheme("light")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
+                theme === "light"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 hover:bg-muted text-foreground"
+              }`}
+            >
+              <Sun className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Claro</span>
+            </button>
+            <button
+              onClick={() => setTheme("dark")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
+                theme === "dark"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 hover:bg-muted text-foreground"
+              }`}
+            >
+              <Moon className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Escuro</span>
+            </button>
+            <button
+              onClick={() => setTheme("system")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
+                theme === "system"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 hover:bg-muted text-foreground"
+              }`}
+            >
+              <Monitor className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Sistema</span>
+            </button>
+          </div>
         </Card>
 
         {/* Info Card */}
