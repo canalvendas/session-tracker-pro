@@ -83,6 +83,7 @@ function AppContent() {
               getMonthlyHistory={getMonthlyHistory}
               getWeeklyHistory={getWeeklyHistory}
               getYearlyHistory={getYearlyHistory}
+              therapistName={user?.user_metadata?.full_name}
             />
           }
         />
