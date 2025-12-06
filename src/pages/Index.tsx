@@ -1,27 +1,15 @@
 import { useState } from "react";
-import { Routes, Route } from "react-router-dom";
 import { useSessionStore } from "@/hooks/useSessionStore";
 import { BottomNav } from "@/components/BottomNav";
 import { AddSessionSheet } from "@/components/AddSessionSheet";
 import { Dashboard } from "@/pages/Dashboard";
-import { CalendarPage } from "@/pages/CalendarPage";
-import { HistoryPage } from "@/pages/HistoryPage";
-import { SettingsPage } from "@/pages/SettingsPage";
 
 const Index = () => {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const {
     settings,
     addSession,
-    deleteSession,
-    getSessionsForDate,
-    getTotalForDate,
     getStats,
-    getMonthlyHistory,
-    getWeeklyHistory,
-    getYearlyHistory,
-    updateSettings,
-    hasSessionsOnDate,
     isLoaded,
   } = useSessionStore();
 
@@ -48,6 +36,8 @@ const Index = () => {
         onOpenChange={setAddSheetOpen}
         onAddSession={addSession}
         sessionValue={settings.sessionValue}
+        clinics={[]}
+        defaultClinic={null}
       />
     </div>
   );

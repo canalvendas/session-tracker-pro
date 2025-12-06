@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      clinics: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          is_default: boolean
+          name: string
+          session_value: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          session_value?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          session_value?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -49,27 +82,41 @@ export type Database = {
       }
       sessions: {
         Row: {
+          clinic_id: string | null
           count: number
           created_at: string
           date: string
           id: string
+          session_value: number | null
           user_id: string
         }
         Insert: {
+          clinic_id?: string | null
           count?: number
           created_at?: string
           date: string
           id?: string
+          session_value?: number | null
           user_id: string
         }
         Update: {
+          clinic_id?: string | null
           count?: number
           created_at?: string
           date?: string
           id?: string
+          session_value?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sessions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
