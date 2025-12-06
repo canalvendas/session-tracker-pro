@@ -96,7 +96,7 @@ const steps = [
   {
     number: "01",
     title: "Efetue o pagamento",
-    description: "Pague R$14,99 via PIX e envie o comprovante"
+    description: "Pague R$14,99 mensais via PIX e envie o comprovante"
   },
   {
     number: "02",
@@ -113,11 +113,11 @@ const steps = [
 const faqs = [
   {
     question: "Qual o valor do TeraDay?",
-    answer: "O TeraDay custa R$14,99 em um pagamento único via PIX. Você terá acesso vitalício a todas as funcionalidades, sem mensalidades ou taxas adicionais."
+    answer: "O TeraDay custa R$14,99 por mês via PIX. Você terá acesso a todas as funcionalidades enquanto sua assinatura estiver ativa."
   },
   {
     question: "Como funciona o pagamento?",
-    answer: "O pagamento é feito via PIX. Basta escanear o QR Code ou copiar a chave PIX, efetuar o pagamento e enviar o comprovante pelo WhatsApp. Seu acesso será liberado em até 24 horas."
+    answer: "O pagamento é mensal via PIX. Basta escanear o QR Code ou copiar a chave PIX, efetuar o pagamento e enviar o comprovante pelo WhatsApp. Seu acesso será renovado por mais 30 dias."
   },
   {
     question: "Funciona offline?",
@@ -185,7 +185,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
             <Leaf className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary">Acesso Vitalício por R$14,99</span>
+            <span className="text-sm text-primary">Apenas R$14,99/mês</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
@@ -207,7 +207,7 @@ export function LandingPage() {
               className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto"
               onClick={() => setIsPaymentModalOpen(true)}
             >
-              Comprar Agora - R$14,99
+              Assinar Agora - R$14,99/mês
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <a href="#funcionalidades">
@@ -352,23 +352,23 @@ export function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Investimento
-              <span className="text-primary"> Único</span>
+              Plano
+              <span className="text-primary"> Mensal</span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Pague uma vez e tenha acesso para sempre. Sem mensalidades.
+              Acesso completo por apenas R$14,99 mensais.
             </p>
           </div>
 
           <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/40 border border-primary/30 rounded-2xl p-8 md:p-12 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary text-white text-sm font-medium px-4 py-1 rounded-bl-lg">
-              Acesso Vitalício
+              Plano Mensal
             </div>
             
             <div className="text-center mb-8">
               <div className="flex items-baseline justify-center gap-2 mb-2">
                 <span className="text-5xl md:text-6xl font-bold">R$ 14,99</span>
-                <span className="text-gray-400">/ único</span>
+                <span className="text-gray-400">/ mês</span>
               </div>
               <p className="text-gray-400">Pagamento via PIX</p>
             </div>
@@ -390,7 +390,7 @@ export function LandingPage() {
                 className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
                 onClick={() => setIsPaymentModalOpen(true)}
               >
-                Comprar Agora
+                Assinar Agora
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
@@ -448,7 +448,7 @@ export function LandingPage() {
             className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
             onClick={() => setIsPaymentModalOpen(true)}
           >
-            Comprar Agora - R$14,99
+            Assinar Agora - R$14,99/mês
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
