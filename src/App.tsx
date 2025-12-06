@@ -28,9 +28,6 @@ function AppContent() {
   usePWAUpdate(); // Monitora atualizações do PWA
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   
-  const location = useLocation();
-  const hideBottomNav = location.pathname === '/settings';
-
   const {
     settings,
     profile,
@@ -141,7 +138,7 @@ function AppContent() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       
-      {!hideBottomNav && <BottomNav onAddClick={() => setAddSheetOpen(true)} />}
+      <BottomNav onAddClick={() => setAddSheetOpen(true)} />
       
       <AddSessionSheet
         open={addSheetOpen}
