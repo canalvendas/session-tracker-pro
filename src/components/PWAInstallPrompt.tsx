@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { X, Download, Share, MoreVertical, Plus } from "lucide-react";
-import logoTeraDay from "@/assets/logo-teraday-transparent.png";
+import { X, Download, Share, MoreVertical, Plus, Leaf } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -125,11 +124,9 @@ export function PWAInstallPrompt() {
           <>
             {/* App Icon */}
             <div className="flex flex-col items-center text-center mb-6">
-              <img 
-                src={logoTeraDay} 
-                alt="TeraDay" 
-                className="h-20 w-20 rounded-2xl shadow-glow mb-4 object-contain"
-              />
+              <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-glow mb-4">
+                <Leaf className="h-10 w-10 text-primary-foreground" />
+              </div>
               <h2 className="text-xl font-bold text-foreground">
                 Instalar <span className="text-primary">Tera</span><span className="text-primary/70">Day</span>
               </h2>
