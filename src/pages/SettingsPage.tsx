@@ -4,16 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Settings } from "@/types/session";
-import { DollarSign, Calendar, Save } from "lucide-react";
+import { DollarSign, Calendar, Save, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface Settings {
+  sessionValue: number;
+  weekStartsOn: 0 | 1;
+}
 
 interface SettingsPageProps {
   settings: Settings;
-  updateSettings: (settings: Partial<Settings>) => void;
+  updateSettings: (settings: Partial<{ session_value: number; week_starts_on: 0 | 1 }>) => void;
+  signOut: () => Promise<{ error: any }>;
 }
 
-export function SettingsPage({ settings, updateSettings }: SettingsPageProps) {
+export function SettingsPage({ settings, updateSettings, signOut }: SettingsPageProps) {
   const [sessionValue, setSessionValue] = useState(settings.sessionValue.toString());
   const [weekStartsOn, setWeekStartsOn] = useState<"0" | "1">(settings.weekStartsOn.toString() as "0" | "1");
   const { toast } = useToast();
@@ -30,14 +35,25 @@ export function SettingsPage({ settings, updateSettings }: SettingsPageProps) {
     }
 
     updateSettings({
-      sessionValue: value,
-      weekStartsOn: parseInt(weekStartsOn) as 0 | 1,
+      session_value: value,
+      week_starts_on: parseInt(weekStartsOn) as 0 | 1,
     });
 
     toast({
       title: "Configurações salvas!",
       description: "Suas preferências foram atualizadas com sucesso",
     });
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -151,6 +167,17 @@ export function SettingsPage({ settings, updateSettings }: SettingsPageProps) {
         <Button size="xl" className="w-full" onClick={handleSave}>
           <Save className="h-5 w-5 mr-2" />
           Salvar Configurações
+        </Button>
+
+        {/* Sign Out */}
+        <Button 
+          variant="outline" 
+          size="lg" 
+          className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-5 w-5 mr-2" />
+          Sair da conta
         </Button>
       </main>
     </div>

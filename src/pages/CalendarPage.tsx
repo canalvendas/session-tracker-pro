@@ -4,13 +4,19 @@ import { ptBR } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SessionCalendar } from "@/components/SessionCalendar";
-import { Plus, Minus, Trash2 } from "lucide-react";
-import { Session } from "@/types/session";
+import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface SessionRecord {
+  id: string;
+  date: string;
+  count: number;
+  created_at: string;
+}
 
 interface CalendarPageProps {
   hasSessionsOnDate: (date: Date) => boolean;
-  getSessionsForDate: (date: Date) => Session[];
+  getSessionsForDate: (date: Date) => SessionRecord[];
   getTotalForDate: (date: Date) => number;
   addSession: (date: Date, count: number) => void;
   deleteSession: (id: string) => void;
