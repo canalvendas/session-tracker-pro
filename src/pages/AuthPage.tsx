@@ -112,7 +112,7 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
         <img 
           src={logoTeraDay} 
           alt="TeraDay - Controle de atendimentos para terapeutas" 
-          className="h-24 w-auto mx-auto drop-shadow-md"
+          className="h-24 w-auto mx-auto drop-shadow-md mix-blend-lighten"
         />
       </div>
 
