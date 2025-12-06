@@ -486,6 +486,54 @@ export function useSupabaseSessionStore(user: User | null) {
     return clinics.find(c => c.id === id);
   }, [clinics]);
 
+  // Get clinic breakdown for a specific month
+  const getClinicBreakdown = useCallback((year: number, month: number): { clinic: Clinic | null; sessions: number; value: number }[] => {
+    const startDate = new Date(year, month, 1);
+    const endDate = endOfMonth(startDate);
+    
+    const clinicTotals: Record<string, { sessions: number; value: number }> = {};
+    let noClinicTotals = { sessions: 0, value: 0 };
+    
+    sessions.forEach(session => {
+      const sessionDate = parseISO(session.date);
+      if (isWithinInterval(sessionDate, { start: startDate, end: endDate })) {
+        const sessionVal = getSessionValue(session);
+        const totalValue = session.count * sessionVal;
+        
+        if (session.clinic_id) {
+          if (!clinicTotals[session.clinic_id]) {
+            clinicTotals[session.clinic_id] = { sessions: 0, value: 0 };
+          }
+          clinicTotals[session.clinic_id].sessions += session.count;
+          clinicTotals[session.clinic_id].value += totalValue;
+        } else {
+          noClinicTotals.sessions += session.count;
+          noClinicTotals.value += totalValue;
+        }
+      }
+    });
+
+    const result: { clinic: Clinic | null; sessions: number; value: number }[] = [];
+    
+    // Add clinic entries
+    Object.entries(clinicTotals).forEach(([clinicId, data]) => {
+      const clinic = clinics.find(c => c.id === clinicId);
+      if (clinic) {
+        result.push({ clinic, ...data });
+      }
+    });
+    
+    // Add "no clinic" entry if there are sessions without clinic
+    if (noClinicTotals.sessions > 0) {
+      result.push({ clinic: null, ...noClinicTotals });
+    }
+    
+    // Sort by value descending
+    result.sort((a, b) => b.value - a.value);
+    
+    return result;
+  }, [sessions, clinics, getSessionValue]);
+
   return {
     sessions,
     clinics,
@@ -512,5 +560,6 @@ export function useSupabaseSessionStore(user: User | null) {
     deleteClinic,
     getDefaultClinic,
     getClinicById,
+    getClinicBreakdown,
   };
 }

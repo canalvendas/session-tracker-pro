@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, CalendarDays, BarChart3, FileDown, ChevronRightIcon } from "lucide-react";
 import { DayRecord } from "@/types/session";
+import { Clinic } from "@/types/clinic";
 import { generateMonthlyReport } from "@/lib/generateReport";
 import { useToast } from "@/hooks/use-toast";
+
 interface HistoryPageProps {
   getMonthlyHistory: (year: number, month: number) => DayRecord[];
   getWeeklyHistory: (year: number, month: number) => { weekStart: Date; weekEnd: Date; sessions: number; value: number }[];
   getYearlyHistory: (year: number) => { month: number; sessions: number; value: number }[];
+  getClinicBreakdown: (year: number, month: number) => { clinic: Clinic | null; sessions: number; value: number }[];
   therapistName?: string;
 }
 
@@ -20,6 +23,7 @@ export function HistoryPage({
   getMonthlyHistory,
   getWeeklyHistory,
   getYearlyHistory,
+  getClinicBreakdown,
   therapistName,
 }: HistoryPageProps) {
   const navigate = useNavigate();
@@ -34,6 +38,7 @@ export function HistoryPage({
   const monthlyHistory = getMonthlyHistory(currentYear, currentMonth);
   const weeklyHistory = getWeeklyHistory(currentYear, currentMonth);
   const yearlyHistory = getYearlyHistory(currentYear);
+  const clinicBreakdown = getClinicBreakdown(currentYear, currentMonth);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -68,6 +73,7 @@ export function HistoryPage({
       generateMonthlyReport({
         monthlyHistory,
         weeklyHistory,
+        clinicBreakdown,
         year: currentYear,
         month: currentMonth,
         therapistName,
