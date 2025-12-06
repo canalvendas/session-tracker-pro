@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface DayRecord {
@@ -173,7 +173,7 @@ export function generateMonthlyReport({
         yPosition = 20;
       }
 
-      const dateLabel = format(new Date(day.date), "EEE, d 'de' MMMM", { locale: ptBR });
+      const dateLabel = format(parseISO(day.date), "EEE, d 'de' MMMM", { locale: ptBR });
       
       if (index % 2 === 0) {
         doc.setFillColor(250, 251, 250);
