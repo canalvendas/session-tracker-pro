@@ -9,15 +9,16 @@ import {
   endOfMonth, 
   isWithinInterval,
   parseISO,
-  startOfYear,
-  endOfYear
 } from 'date-fns';
+import { Clinic, ClinicFormData } from '@/types/clinic';
 
 interface Session {
   id: string;
   date: string;
   count: number;
   created_at: string;
+  clinic_id: string | null;
+  session_value: number | null;
 }
 
 interface Profile {
@@ -41,6 +42,7 @@ interface DayRecord {
 
 export function useSupabaseSessionStore(user: User | null) {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [profile, setProfile] = useState<Profile>({
     session_value: 40,
     week_starts_on: 1,
@@ -49,10 +51,11 @@ export function useSupabaseSessionStore(user: User | null) {
   });
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Fetch sessions and profile
+  // Fetch sessions, clinics and profile
   useEffect(() => {
     if (!user) {
       setSessions([]);
+      setClinics([]);
       setIsLoaded(true);
       return;
     }
@@ -68,6 +71,16 @@ export function useSupabaseSessionStore(user: User | null) {
 
         if (sessionsError) throw sessionsError;
         setSessions(sessionsData || []);
+
+        // Fetch clinics
+        const { data: clinicsData, error: clinicsError } = await supabase
+          .from('clinics')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (clinicsError) throw clinicsError;
+        setClinics(clinicsData || []);
 
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
@@ -98,10 +111,146 @@ export function useSupabaseSessionStore(user: User | null) {
     fetchData();
   }, [user]);
 
-  const addSession = useCallback(async (date: Date, count: number = 1) => {
+  // Get default clinic
+  const getDefaultClinic = useCallback((): Clinic | null => {
+    if (clinics.length === 0) return null;
+    const defaultClinic = clinics.find(c => c.is_default);
+    return defaultClinic || clinics[0];
+  }, [clinics]);
+
+  // Get session value for calculation (use session's stored value or clinic value or profile default)
+  const getSessionValue = useCallback((session: Session): number => {
+    if (session.session_value != null) {
+      return session.session_value;
+    }
+    if (session.clinic_id) {
+      const clinic = clinics.find(c => c.id === session.clinic_id);
+      if (clinic) return clinic.session_value;
+    }
+    return profile.session_value;
+  }, [clinics, profile.session_value]);
+
+  // Clinic management
+  const addClinic = useCallback(async (data: ClinicFormData): Promise<Clinic | null> => {
+    if (!user) return null;
+
+    // If setting as default, unset other defaults first
+    if (data.is_default && clinics.some(c => c.is_default)) {
+      await supabase
+        .from('clinics')
+        .update({ is_default: false })
+        .eq('user_id', user.id);
+    }
+
+    const { data: newClinic, error } = await supabase
+      .from('clinics')
+      .insert({
+        user_id: user.id,
+        name: data.name,
+        session_value: data.session_value,
+        color: data.color,
+        is_default: data.is_default || clinics.length === 0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding clinic:', error);
+      return null;
+    }
+
+    setClinics(prev => {
+      if (newClinic.is_default) {
+        return [...prev.map(c => ({ ...c, is_default: false })), newClinic];
+      }
+      return [...prev, newClinic];
+    });
+    return newClinic;
+  }, [user, clinics]);
+
+  const updateClinic = useCallback(async (id: string, data: ClinicFormData) => {
+    if (!user) return;
+
+    // If setting as default, unset other defaults first
+    if (data.is_default) {
+      await supabase
+        .from('clinics')
+        .update({ is_default: false })
+        .eq('user_id', user.id)
+        .neq('id', id);
+    }
+
+    const { data: updatedClinic, error } = await supabase
+      .from('clinics')
+      .update({
+        name: data.name,
+        session_value: data.session_value,
+        color: data.color,
+        is_default: data.is_default,
+      })
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating clinic:', error);
+      return;
+    }
+
+    setClinics(prev => {
+      if (data.is_default) {
+        return prev.map(c => c.id === id ? updatedClinic : { ...c, is_default: false });
+      }
+      return prev.map(c => c.id === id ? updatedClinic : c);
+    });
+  }, [user]);
+
+  const deleteClinic = useCallback(async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('clinics')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting clinic:', error);
+      return;
+    }
+
+    setClinics(prev => {
+      const remaining = prev.filter(c => c.id !== id);
+      // If deleted clinic was default and there are others, set first as default
+      if (prev.find(c => c.id === id)?.is_default && remaining.length > 0) {
+        remaining[0] = { ...remaining[0], is_default: true };
+        // Update in database
+        supabase
+          .from('clinics')
+          .update({ is_default: true })
+          .eq('id', remaining[0].id)
+          .eq('user_id', user.id);
+      }
+      return remaining;
+    });
+  }, [user]);
+
+  // Session management with clinic support
+  const addSession = useCallback(async (date: Date, count: number = 1, clinicId?: string) => {
     if (!user) return null;
 
     const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // Determine clinic and session value
+    let clinic: Clinic | null = null;
+    if (clinicId) {
+      clinic = clinics.find(c => c.id === clinicId) || null;
+    } else {
+      clinic = getDefaultClinic();
+    }
+
+    const sessionValue = clinic?.session_value ?? profile.session_value;
     
     const { data, error } = await supabase
       .from('sessions')
@@ -109,6 +258,8 @@ export function useSupabaseSessionStore(user: User | null) {
         user_id: user.id,
         date: dateStr,
         count,
+        clinic_id: clinic?.id || null,
+        session_value: sessionValue,
       })
       .select()
       .single();
@@ -120,7 +271,7 @@ export function useSupabaseSessionStore(user: User | null) {
 
     setSessions(prev => [data, ...prev]);
     return data;
-  }, [user]);
+  }, [user, clinics, getDefaultClinic, profile.session_value]);
 
   const deleteSession = useCallback(async (id: string) => {
     if (!user) return;
@@ -139,12 +290,20 @@ export function useSupabaseSessionStore(user: User | null) {
     setSessions(prev => prev.filter(s => s.id !== id));
   }, [user]);
 
-  const updateSession = useCallback(async (id: string, count: number) => {
+  const updateSession = useCallback(async (id: string, count: number, clinicId?: string) => {
     if (!user) return;
+
+    const updateData: { count: number; clinic_id?: string | null; session_value?: number } = { count };
+    
+    if (clinicId !== undefined) {
+      const clinic = clinics.find(c => c.id === clinicId);
+      updateData.clinic_id = clinicId || null;
+      updateData.session_value = clinic?.session_value ?? profile.session_value;
+    }
 
     const { data, error } = await supabase
       .from('sessions')
-      .update({ count })
+      .update(updateData)
       .eq('id', id)
       .eq('user_id', user.id)
       .select()
@@ -156,7 +315,7 @@ export function useSupabaseSessionStore(user: User | null) {
     }
 
     setSessions(prev => prev.map(s => s.id === id ? data : s));
-  }, [user]);
+  }, [user, clinics, profile.session_value]);
 
   const getSessionsForDate = useCallback((date: Date): Session[] => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -175,62 +334,65 @@ export function useSupabaseSessionStore(user: User | null) {
     const monthEnd = endOfMonth(referenceDate);
 
     let dailySessions = 0;
+    let dailyValue = 0;
     let weeklySessions = 0;
+    let weeklyValue = 0;
     let monthlySessions = 0;
+    let monthlyValue = 0;
 
     sessions.forEach(session => {
       const sessionDate = parseISO(session.date);
+      const sessionVal = getSessionValue(session);
+      const totalValue = session.count * sessionVal;
       
       if (session.date === today) {
         dailySessions += session.count;
+        dailyValue += totalValue;
       }
       
       if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
         weeklySessions += session.count;
+        weeklyValue += totalValue;
       }
       
       if (isWithinInterval(sessionDate, { start: monthStart, end: monthEnd })) {
         monthlySessions += session.count;
+        monthlyValue += totalValue;
       }
     });
 
     return {
-      daily: {
-        sessions: dailySessions,
-        value: dailySessions * profile.session_value,
-      },
-      weekly: {
-        sessions: weeklySessions,
-        value: weeklySessions * profile.session_value,
-      },
-      monthly: {
-        sessions: monthlySessions,
-        value: monthlySessions * profile.session_value,
-      },
+      daily: { sessions: dailySessions, value: dailyValue },
+      weekly: { sessions: weeklySessions, value: weeklyValue },
+      monthly: { sessions: monthlySessions, value: monthlyValue },
     };
-  }, [sessions, profile]);
+  }, [sessions, profile, getSessionValue]);
 
   const getMonthlyHistory = useCallback((year: number, month: number): DayRecord[] => {
     const startDate = new Date(year, month, 1);
     const endDate = endOfMonth(startDate);
     
-    const dailyTotals: Record<string, number> = {};
+    const dailyTotals: Record<string, { sessions: number; value: number }> = {};
     
     sessions.forEach(session => {
       const sessionDate = parseISO(session.date);
       if (isWithinInterval(sessionDate, { start: startDate, end: endDate })) {
-        dailyTotals[session.date] = (dailyTotals[session.date] || 0) + session.count;
+        if (!dailyTotals[session.date]) {
+          dailyTotals[session.date] = { sessions: 0, value: 0 };
+        }
+        dailyTotals[session.date].sessions += session.count;
+        dailyTotals[session.date].value += session.count * getSessionValue(session);
       }
     });
 
     return Object.entries(dailyTotals)
-      .map(([date, sessionCount]) => ({
+      .map(([date, data]) => ({
         date,
-        sessions: sessionCount,
-        value: sessionCount * profile.session_value,
+        sessions: data.sessions,
+        value: data.value,
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [sessions, profile]);
+  }, [sessions, getSessionValue]);
 
   const getWeeklyHistory = useCallback((year: number, month: number) => {
     const monthStart = new Date(year, month, 1);
@@ -242,11 +404,13 @@ export function useSupabaseSessionStore(user: User | null) {
     while (currentWeekStart <= monthEnd) {
       const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: profile.week_starts_on });
       let weekSessions = 0;
+      let weekValue = 0;
       
       sessions.forEach(session => {
         const sessionDate = parseISO(session.date);
         if (isWithinInterval(sessionDate, { start: currentWeekStart, end: currentWeekEnd })) {
           weekSessions += session.count;
+          weekValue += session.count * getSessionValue(session);
         }
       });
       
@@ -255,7 +419,7 @@ export function useSupabaseSessionStore(user: User | null) {
           weekStart: currentWeekStart,
           weekEnd: currentWeekEnd,
           sessions: weekSessions,
-          value: weekSessions * profile.session_value,
+          value: weekValue,
         });
       }
       
@@ -264,7 +428,7 @@ export function useSupabaseSessionStore(user: User | null) {
     }
     
     return weeks;
-  }, [sessions, profile]);
+  }, [sessions, profile, getSessionValue]);
 
   const getYearlyHistory = useCallback((year: number) => {
     const monthlyTotals: { month: number; sessions: number; value: number }[] = [];
@@ -273,23 +437,25 @@ export function useSupabaseSessionStore(user: User | null) {
       const monthStart = new Date(year, month, 1);
       const monthEnd = endOfMonth(monthStart);
       let monthSessions = 0;
+      let monthValue = 0;
       
       sessions.forEach(session => {
         const sessionDate = parseISO(session.date);
         if (isWithinInterval(sessionDate, { start: monthStart, end: monthEnd })) {
           monthSessions += session.count;
+          monthValue += session.count * getSessionValue(session);
         }
       });
       
       monthlyTotals.push({
         month,
         sessions: monthSessions,
-        value: monthSessions * profile.session_value,
+        value: monthValue,
       });
     }
     
     return monthlyTotals;
-  }, [sessions, profile]);
+  }, [sessions, getSessionValue]);
 
   const updateSettings = useCallback(async (newSettings: Partial<Profile>) => {
     if (!user) return;
@@ -315,8 +481,14 @@ export function useSupabaseSessionStore(user: User | null) {
     return sessions.some(s => s.date === dateStr);
   }, [sessions]);
 
+  // Get clinic by ID
+  const getClinicById = useCallback((id: string): Clinic | undefined => {
+    return clinics.find(c => c.id === id);
+  }, [clinics]);
+
   return {
     sessions,
+    clinics,
     settings: {
       sessionValue: profile.session_value,
       weekStartsOn: profile.week_starts_on,
@@ -334,5 +506,11 @@ export function useSupabaseSessionStore(user: User | null) {
     getYearlyHistory,
     updateSettings,
     hasSessionsOnDate,
+    // Clinic functions
+    addClinic,
+    updateClinic,
+    deleteClinic,
+    getDefaultClinic,
+    getClinicById,
   };
 }

@@ -31,6 +31,7 @@ function AppContent() {
   const {
     settings,
     profile,
+    clinics,
     addSession,
     deleteSession,
     updateSession,
@@ -43,6 +44,10 @@ function AppContent() {
     updateSettings,
     hasSessionsOnDate,
     isLoaded,
+    addClinic,
+    updateClinic,
+    deleteClinic,
+    getDefaultClinic,
   } = useSupabaseSessionStore(user);
 
   const stats = getStats();
@@ -130,6 +135,10 @@ function AppContent() {
               settings={settings}
               updateSettings={updateSettings}
               signOut={signOut}
+              clinics={clinics}
+              onAddClinic={addClinic}
+              onUpdateClinic={updateClinic}
+              onDeleteClinic={deleteClinic}
             />
           }
         />
@@ -145,6 +154,8 @@ function AppContent() {
         onOpenChange={setAddSheetOpen}
         onAddSession={addSession}
         sessionValue={settings.sessionValue}
+        clinics={clinics}
+        defaultClinic={getDefaultClinic()}
       />
     </div>
   );

@@ -3,13 +3,13 @@ import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
-import { DollarSign, Calendar, Save, LogOut, Moon, Sun, Monitor, Shield } from "lucide-react";
+import { Calendar, Save, LogOut, Moon, Sun, Monitor, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ClinicManager } from "@/components/ClinicManager";
+import { Clinic, ClinicFormData } from "@/types/clinic";
 
 interface Settings {
   sessionValue: number;
@@ -20,10 +20,21 @@ interface SettingsPageProps {
   settings: Settings;
   updateSettings: (settings: Partial<{ session_value: number; week_starts_on: 0 | 1 }>) => void;
   signOut: () => Promise<{ error: any }>;
+  clinics: Clinic[];
+  onAddClinic: (data: ClinicFormData) => Promise<Clinic | null>;
+  onUpdateClinic: (id: string, data: ClinicFormData) => Promise<void>;
+  onDeleteClinic: (id: string) => Promise<void>;
 }
 
-export function SettingsPage({ settings, updateSettings, signOut }: SettingsPageProps) {
-  const [sessionValue, setSessionValue] = useState(settings.sessionValue.toString());
+export function SettingsPage({ 
+  settings, 
+  updateSettings, 
+  signOut,
+  clinics,
+  onAddClinic,
+  onUpdateClinic,
+  onDeleteClinic,
+}: SettingsPageProps) {
   const [weekStartsOn, setWeekStartsOn] = useState<"0" | "1">(settings.weekStartsOn.toString() as "0" | "1");
   const [isAdmin, setIsAdmin] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -45,18 +56,7 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
   }, []);
 
   const handleSave = () => {
-    const value = parseFloat(sessionValue);
-    if (isNaN(value) || value <= 0) {
-      toast({
-        title: "Valor inválido",
-        description: "Por favor, insira um valor válido para a sessão",
-        variant: "destructive",
-      });
-      return;
-    }
-
     updateSettings({
-      session_value: value,
       week_starts_on: parseInt(weekStartsOn) as 0 | 1,
     });
 
@@ -69,33 +69,23 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
   const handleSignOut = async () => {
     const { error } = await signOut();
     
-    // Verifica se é um erro relacionado a sessão (já inválida/expirada)
     const isSessionError = 
       !error ||
       error?.code === 'session_not_found' ||
       error?.message?.toLowerCase().includes('session') ||
       error?.message?.toLowerCase().includes('missing');
     
-    // Se for erro de sessão, prossegue com logout normalmente
     if (isSessionError) {
       localStorage.clear();
       window.location.href = '/';
       return;
     }
     
-    // Apenas erros não relacionados a sessão mostram toast
     toast({
       title: "Erro ao sair",
       description: error.message,
       variant: "destructive",
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(amount);
   };
 
   return (
@@ -109,41 +99,13 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
       </header>
 
       <main className="px-5 space-y-5">
-        {/* Session Value */}
-        <Card variant="elevated">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-foreground">
-                Valor da Sessão
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Defina quanto você cobra por sessão
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                R$
-              </span>
-              <Input
-                type="number"
-                value={sessionValue}
-                onChange={(e) => setSessionValue(e.target.value)}
-                className="pl-12 h-12 text-lg font-semibold"
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Valor atual: {formatCurrency(settings.sessionValue)}
-            </p>
-          </div>
-        </Card>
+        {/* Clinic Manager - Main feature now */}
+        <ClinicManager
+          clinics={clinics}
+          onAdd={onAddClinic}
+          onUpdate={onUpdateClinic}
+          onDelete={onDeleteClinic}
+        />
 
         {/* Week Start */}
         <Card variant="elevated">
@@ -276,7 +238,7 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
                 Dica
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Você pode editar ou excluir sessões individuais acessando o calendário e selecionando o dia desejado.
+                Agora você pode ter múltiplas clínicas com valores diferentes! Ao registrar uma sessão, selecione a clínica correspondente.
               </p>
             </div>
           </div>
@@ -301,7 +263,7 @@ export function SettingsPage({ settings, updateSettings, signOut }: SettingsPage
 
         {/* Version */}
         <p className="text-center text-xs text-muted-foreground pt-4">
-          TeraDay v1.1.0
+          TeraDay v1.2.0
         </p>
       </main>
     </div>
