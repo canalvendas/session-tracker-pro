@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
-import logoTeraDay from "@/assets/logo-teraday-final.png";
+import logoTeraDay from "@/assets/logo-teraday-transparent.png";
 
 const emailSchema = z.string().email("Email inválido");
 const passwordSchema = z.string().min(6, "Senha deve ter pelo menos 6 caracteres");
@@ -112,7 +112,7 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
         <img 
           src={logoTeraDay} 
           alt="TeraDay - Controle de atendimentos para terapeutas" 
-          className="h-24 w-auto mx-auto drop-shadow-md mix-blend-lighten"
+          className="h-28 w-auto mx-auto"
         />
       </div>
 
