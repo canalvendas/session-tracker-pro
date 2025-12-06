@@ -108,13 +108,11 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
     <div className="min-h-screen gradient-surface flex flex-col items-center justify-center p-5">
       {/* Logo */}
       <div className="mb-8 text-center animate-fade-in">
-        <div className="h-20 w-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-glow">
-          <img src="/pwa-512x512.png" alt="TeraDay" className="h-full w-full object-cover" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">TeraDay</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Controle de atendimentos para terapeutas
-        </p>
+        <img 
+          src="/logo-teraday.png" 
+          alt="TeraDay - Controle de atendimentos para terapeutas" 
+          className="h-32 w-auto mx-auto drop-shadow-lg"
+        />
       </div>
 
       {/* Auth Card */}
