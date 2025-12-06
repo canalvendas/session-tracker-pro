@@ -17,6 +17,7 @@ import { MonthDetailPage } from "@/pages/MonthDetailPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AuthPage } from "@/pages/AuthPage";
 import { LandingPage } from "@/pages/LandingPage";
+import { PendingAccessPage } from "@/pages/PendingAccessPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,16 @@ function AppContent() {
           <Route path="/auth" element={<AuthPage signIn={signIn} signUp={signUp} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      </>
+    );
+  }
+
+  // Authenticated but not paid
+  if (!profile.is_paid) {
+    return (
+      <>
+        <PWAInstallPrompt />
+        <PendingAccessPage signOut={signOut} userEmail={user.email} />
       </>
     );
   }
