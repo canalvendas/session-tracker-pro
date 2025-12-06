@@ -1,14 +1,30 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, X, RefreshCw, Users, UserCheck, UserX } from "lucide-react";
+import { ArrowLeft, Check, RefreshCw, Users, UserCheck, UserX, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface UserProfile {
   id: string;
@@ -26,6 +42,7 @@ export function AdminPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [userToBlock, setUserToBlock] = useState<UserProfile | null>(null);
 
   const fetchPendingUsers = async () => {
     try {
@@ -150,7 +167,7 @@ export function AdminPage() {
       }
 
       toast({
-        title: "Acesso revogado",
+        title: "Acesso bloqueado",
         description: "O usuário não pode mais acessar o app.",
       });
 
@@ -159,15 +176,26 @@ export function AdminPage() {
       console.error('Error revoking user:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível revogar o acesso.",
+        description: "Não foi possível bloquear o acesso.",
         variant: "destructive",
       });
     } finally {
       setActionLoading(null);
+      setUserToBlock(null);
     }
   };
 
-  const UserCard = ({ user, showApprove = true }: { user: UserProfile; showApprove?: boolean }) => (
+  const handleBlockClick = (user: UserProfile) => {
+    setUserToBlock(user);
+  };
+
+  const confirmBlock = () => {
+    if (userToBlock) {
+      revokeUser(userToBlock.user_id);
+    }
+  };
+
+  const UserCard = ({ user, showAllActions = false }: { user: UserProfile; showAllActions?: boolean }) => (
     <Card className="bg-card/80 border-border/50">
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-4">
@@ -184,34 +212,52 @@ export function AdminPage() {
             <Badge variant={user.is_paid ? "default" : "secondary"}>
               {user.is_paid ? "Ativo" : "Pendente"}
             </Badge>
-            {showApprove && !user.is_paid && (
-              <Button
-                size="sm"
-                onClick={() => approveUser(user.user_id)}
-                disabled={actionLoading === user.user_id}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {actionLoading === user.user_id ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            {user.is_paid && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => revokeUser(user.user_id)}
-                disabled={actionLoading === user.user_id}
-              >
-                {actionLoading === user.user_id ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-              </Button>
-            )}
+            <TooltipProvider>
+              {/* Botão Aprovar - aparece para usuários pendentes */}
+              {!user.is_paid && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      onClick={() => approveUser(user.user_id)}
+                      disabled={actionLoading === user.user_id}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {actionLoading === user.user_id ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Liberar acesso</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {/* Botão Bloquear - aparece para usuários ativos */}
+              {user.is_paid && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleBlockClick(user)}
+                      disabled={actionLoading === user.user_id}
+                    >
+                      {actionLoading === user.user_id ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Ban className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Bloquear acesso</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </TooltipProvider>
           </div>
         </div>
       </CardContent>
@@ -313,12 +359,38 @@ export function AdminPage() {
               </Card>
             ) : (
               allUsers.map(user => (
-                <UserCard key={user.id} user={user} showApprove={false} />
+                <UserCard key={user.id} user={user} showAllActions />
               ))
             )}
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog de confirmação para bloquear usuário */}
+      <AlertDialog open={!!userToBlock} onOpenChange={(open) => !open && setUserToBlock(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bloquear usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja bloquear o acesso de{" "}
+              <span className="font-semibold text-foreground">
+                {userToBlock?.full_name || userToBlock?.email}
+              </span>
+              ? O usuário não poderá mais acessar o app até ser liberado novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBlock}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Ban className="h-4 w-4 mr-2" />
+              Bloquear
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
