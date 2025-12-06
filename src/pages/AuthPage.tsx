@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, Eye, EyeOff, Heart } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Email inválido");
@@ -108,8 +108,8 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
     <div className="min-h-screen gradient-surface flex flex-col items-center justify-center p-5">
       {/* Logo */}
       <div className="mb-8 text-center animate-fade-in">
-        <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
-          <Heart className="h-8 w-8 text-primary-foreground" />
+        <div className="h-20 w-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-glow">
+          <img src="/pwa-512x512.png" alt="TeraDay" className="h-full w-full object-cover" />
         </div>
         <h1 className="text-2xl font-bold text-foreground">TeraDay</h1>
         <p className="text-sm text-muted-foreground mt-1">
