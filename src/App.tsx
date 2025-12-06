@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSupabaseSessionStore } from "@/hooks/useSupabaseSessionStore";
 import { BottomNav } from "@/components/BottomNav";
 import { AddSessionSheet } from "@/components/AddSessionSheet";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Dashboard } from "@/pages/Dashboard";
 import { CalendarPage } from "@/pages/CalendarPage";
 import { HistoryPage } from "@/pages/HistoryPage";
@@ -52,15 +53,19 @@ function AppContent() {
   // Not authenticated
   if (!user) {
     return (
-      <Routes>
-        <Route path="/auth" element={<AuthPage signIn={signIn} signUp={signUp} />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
+      <>
+        <PWAInstallPrompt />
+        <Routes>
+          <Route path="/auth" element={<AuthPage signIn={signIn} signUp={signUp} />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        </Routes>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen">
+      <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Dashboard stats={stats} />} />
         <Route
