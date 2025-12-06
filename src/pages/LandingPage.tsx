@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
 import { 
   Leaf, 
@@ -22,7 +22,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { PixPaymentModal } from "@/components/PixPaymentModal";
+
+// Lazy load do modal de pagamento para evitar erros quebrarem a página
+const PixPaymentModal = lazy(() => 
+  import("@/components/PixPaymentModal").then(mod => ({ default: mod.PixPaymentModal }))
+);
 
 const features = [
   {
@@ -468,11 +472,13 @@ export function LandingPage() {
         </div>
       </footer>
 
-      {/* PIX Payment Modal */}
-      <PixPaymentModal 
-        open={isPaymentModalOpen} 
-        onOpenChange={setIsPaymentModalOpen} 
-      />
+      {/* PIX Payment Modal - Lazy loaded com Suspense */}
+      <Suspense fallback={null}>
+        <PixPaymentModal 
+          open={isPaymentModalOpen} 
+          onOpenChange={setIsPaymentModalOpen} 
+        />
+      </Suspense>
     </div>
   );
 }

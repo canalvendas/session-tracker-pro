@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, MessageCircle, X } from "lucide-react";
+import { Copy, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,11 +15,51 @@ interface PixPaymentModalProps {
 }
 
 const PIX_KEY = "pixmusetera@gmail.com";
-const PIX_VALUE = "14.99";
 const WHATSAPP_NUMBER = "5581986953506";
 
-// QR Code simples com a chave PIX
-const generatePixPayload = () => PIX_KEY;
+// Componente de QR Code com tratamento de erro
+function SafeQRCode() {
+  const [hasError, setHasError] = useState(false);
+  const [QRCodeComponent, setQRCodeComponent] = useState<React.ComponentType<any> | null>(null);
+
+  // Carrega o componente QRCode de forma dinâmica
+  useState(() => {
+    import("qrcode.react")
+      .then((mod) => {
+        setQRCodeComponent(() => mod.QRCodeSVG);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar QRCode:", err);
+        setHasError(true);
+      });
+  });
+
+  if (hasError || !QRCodeComponent) {
+    return (
+      <div className="w-[180px] h-[180px] flex items-center justify-center text-gray-500 text-sm text-center p-4">
+        {hasError ? "QR Code indisponível. Use a chave PIX abaixo." : "Carregando..."}
+      </div>
+    );
+  }
+
+  try {
+    return (
+      <QRCodeComponent
+        value={PIX_KEY}
+        size={180}
+        level="M"
+        includeMargin={false}
+      />
+    );
+  } catch (error) {
+    console.error("Erro ao renderizar QR Code:", error);
+    return (
+      <div className="w-[180px] h-[180px] flex items-center justify-center text-gray-500 text-sm text-center p-4">
+        QR Code indisponível. Use a chave PIX abaixo.
+      </div>
+    );
+  }
+}
 
 export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
   const [copied, setCopied] = useState(false);
@@ -63,12 +102,7 @@ export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
           {/* QR Code */}
           <div className="flex flex-col items-center">
             <div className="bg-white p-4 rounded-xl">
-              <QRCodeSVG
-                value={generatePixPayload()}
-                size={180}
-                level="M"
-                includeMargin={false}
-              />
+              <SafeQRCode />
             </div>
             <p className="text-gray-400 text-sm mt-3">
               Escaneie o QR Code com seu app de banco
