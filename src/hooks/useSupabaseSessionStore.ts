@@ -24,6 +24,7 @@ interface Profile {
   session_value: number;
   week_starts_on: 0 | 1;
   full_name: string | null;
+  is_paid: boolean;
 }
 
 interface Stats {
@@ -44,6 +45,7 @@ export function useSupabaseSessionStore(user: User | null) {
     session_value: 40,
     week_starts_on: 1,
     full_name: null,
+    is_paid: false,
   });
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -70,7 +72,7 @@ export function useSupabaseSessionStore(user: User | null) {
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('session_value, week_starts_on, full_name')
+          .select('session_value, week_starts_on, full_name, is_paid')
           .eq('user_id', user.id)
           .single();
 
@@ -83,6 +85,7 @@ export function useSupabaseSessionStore(user: User | null) {
             session_value: Number(profileData.session_value),
             week_starts_on: profileData.week_starts_on as 0 | 1,
             full_name: profileData.full_name,
+            is_paid: profileData.is_paid ?? false,
           });
         }
       } catch (error) {
