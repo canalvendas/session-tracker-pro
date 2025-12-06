@@ -29,12 +29,6 @@ export function AdminPage() {
 
   const fetchPendingUsers = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('admin-users', {
-        body: null,
-        method: 'GET',
-      });
-
-      // Workaround: invoke não suporta query params, usar headers ou body
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=pending`,
         {
