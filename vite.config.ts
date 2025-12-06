@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "Sessões - Controle de Atendimentos",
-        short_name: "Sessões",
+        name: "TeraDay - Controle de Atendimentos",
+        short_name: "TeraDay",
         description: "Aplicativo para terapeutas registrarem e acompanharem suas sessões de atendimento",
         theme_color: "#3d8b7d",
         background_color: "#f7faf9",
