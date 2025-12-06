@@ -109,14 +109,14 @@ export function AuthPage({ signIn, signUp }: AuthPageProps) {
     <div className="min-h-screen gradient-surface flex flex-col items-center justify-center p-5">
       {/* Logo */}
       <div className="mb-8 text-center animate-fade-in">
-        <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-primary flex items-center justify-center shadow-glow">
-          <Leaf className="h-10 w-10 text-primary-foreground" />
+        <div className="w-28 h-28 mx-auto mb-4 rounded-full bg-primary flex items-center justify-center shadow-glow">
+          <Leaf className="h-14 w-14 text-primary-foreground" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-4xl font-bold tracking-tight">
           <span className="text-primary">Tera</span>
           <span className="text-primary/70">Day</span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-base text-muted-foreground mt-2">
           Controle de atendimentos para terapeutas
         </p>
       </div>
