@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSupabaseSessionStore } from "@/hooks/useSupabaseSessionStore";
 import { usePWAUpdate } from "@/hooks/usePWAUpdate";
@@ -28,6 +28,9 @@ function AppContent() {
   usePWAUpdate(); // Monitora atualizações do PWA
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   
+  const location = useLocation();
+  const hideBottomNav = location.pathname === '/settings';
+
   const {
     settings,
     profile,
@@ -138,7 +141,7 @@ function AppContent() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       
-      <BottomNav onAddClick={() => setAddSheetOpen(true)} />
+      {!hideBottomNav && <BottomNav onAddClick={() => setAddSheetOpen(true)} />}
       
       <AddSessionSheet
         open={addSheetOpen}
