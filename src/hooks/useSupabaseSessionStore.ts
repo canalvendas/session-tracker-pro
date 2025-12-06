@@ -136,6 +136,25 @@ export function useSupabaseSessionStore(user: User | null) {
     setSessions(prev => prev.filter(s => s.id !== id));
   }, [user]);
 
+  const updateSession = useCallback(async (id: string, count: number) => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({ count })
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating session:', error);
+      return;
+    }
+
+    setSessions(prev => prev.map(s => s.id === id ? data : s));
+  }, [user]);
+
   const getSessionsForDate = useCallback((date: Date): Session[] => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return sessions.filter(s => s.date === dateStr);
@@ -303,6 +322,7 @@ export function useSupabaseSessionStore(user: User | null) {
     isLoaded,
     addSession,
     deleteSession,
+    updateSession,
     getSessionsForDate,
     getTotalForDate,
     getStats,

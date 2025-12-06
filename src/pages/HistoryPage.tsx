@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { format, getMonth, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, CalendarDays, BarChart3, FileDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, BarChart3, FileDown, ChevronRightIcon } from "lucide-react";
 import { DayRecord } from "@/types/session";
 import { generateMonthlyReport } from "@/lib/generateReport";
 import { useToast } from "@/hooks/use-toast";
-
 interface HistoryPageProps {
   getMonthlyHistory: (year: number, month: number) => DayRecord[];
   getWeeklyHistory: (year: number, month: number) => { weekStart: Date; weekEnd: Date; sessions: number; value: number }[];
@@ -22,6 +22,7 @@ export function HistoryPage({
   getYearlyHistory,
   therapistName,
 }: HistoryPageProps) {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState("daily");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -242,16 +243,24 @@ export function HistoryPage({
                 {yearlyHistory.map((monthData) => {
                   const maxSessions = Math.max(...yearlyHistory.map(m => m.sessions), 1);
                   const barWidth = (monthData.sessions / maxSessions) * 100;
+                  const hasData = monthData.sessions > 0;
                   
                   return (
-                    <div key={monthData.month} className="space-y-1">
+                    <div 
+                      key={monthData.month} 
+                      className={`space-y-1 p-2 rounded-lg transition-colors ${hasData ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                      onClick={() => hasData && navigate(`/history/month/${currentYear}/${monthData.month}`)}
+                    >
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-foreground">
                           {monthNames[monthData.month].substring(0, 3)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {monthData.sessions} • {formatCurrency(monthData.value)}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">
+                            {monthData.sessions} • {formatCurrency(monthData.value)}
+                          </p>
+                          {hasData && <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />}
+                        </div>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div 
