@@ -19,11 +19,8 @@ const PIX_KEY = "pixmusetera@gmail.com";
 const PIX_VALUE = "14.99";
 const WHATSAPP_NUMBER = "5581986953506";
 
-// Payload PIX para QR Code (formato EMV)
-const generatePixPayload = () => {
-  const pixPayload = `00020126580014br.gov.bcb.pix0136${PIX_KEY}5204000053039865406${PIX_VALUE}5802BR5925TeraDay6009SAO PAULO62070503***6304`;
-  return pixPayload;
-};
+// QR Code simples com a chave PIX
+const generatePixPayload = () => PIX_KEY;
 
 export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
   const [copied, setCopied] = useState(false);
