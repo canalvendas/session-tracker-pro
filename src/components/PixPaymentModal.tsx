@@ -16,6 +16,73 @@ interface PixPaymentModalProps {
 
 const PIX_KEY = "pixmusetera@gmail.com";
 const WHATSAPP_NUMBER = "5581986953506";
+const MERCHANT_NAME = "TERADAY";
+const MERCHANT_CITY = "RECIFE";
+const AMOUNT = 19.90;
+
+// Função para gerar payload PIX no formato EMV/BRCode
+function generatePixPayload(): string {
+  const formatField = (id: string, value: string): string => {
+    const length = value.length.toString().padStart(2, '0');
+    return `${id}${length}${value}`;
+  };
+
+  // Merchant Account Information (ID 26)
+  const gui = formatField('00', 'BR.GOV.BCB.PIX');
+  const pixKey = formatField('01', PIX_KEY);
+  const merchantAccountInfo = formatField('26', gui + pixKey);
+
+  // Campos principais
+  const payloadFormatIndicator = formatField('00', '01');
+  const merchantCategoryCode = formatField('52', '0000');
+  const transactionCurrency = formatField('53', '986');
+  const transactionAmount = formatField('54', AMOUNT.toFixed(2));
+  const countryCode = formatField('58', 'BR');
+  const merchantName = formatField('59', MERCHANT_NAME.substring(0, 25));
+  const merchantCity = formatField('60', MERCHANT_CITY.substring(0, 15));
+  
+  // Additional Data Field (ID 62) - Transaction ID
+  const txid = formatField('05', '***');
+  const additionalDataField = formatField('62', txid);
+
+  // Montar payload sem CRC
+  const payloadWithoutCRC = 
+    payloadFormatIndicator +
+    merchantAccountInfo +
+    merchantCategoryCode +
+    transactionCurrency +
+    transactionAmount +
+    countryCode +
+    merchantName +
+    merchantCity +
+    additionalDataField +
+    '6304'; // CRC placeholder
+
+  // Calcular CRC16-CCITT
+  const crc = calculateCRC16(payloadWithoutCRC);
+  
+  return payloadWithoutCRC + crc;
+}
+
+// Função CRC16-CCITT conforme especificação do Banco Central
+function calculateCRC16(payload: string): string {
+  let crc = 0xFFFF;
+  const polynomial = 0x1021;
+
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) {
+        crc = (crc << 1) ^ polynomial;
+      } else {
+        crc <<= 1;
+      }
+      crc &= 0xFFFF;
+    }
+  }
+
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
 
 // Componente de QR Code com tratamento de erro e tamanho responsivo
 function SafeQRCode() {
@@ -56,7 +123,7 @@ function SafeQRCode() {
   try {
     return (
       <QRCodeComponent
-        value={PIX_KEY}
+        value={generatePixPayload()}
         size={qrSize}
         level="M"
         includeMargin={false}
