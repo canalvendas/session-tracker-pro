@@ -96,7 +96,7 @@ const steps = [
   {
     number: "01",
     title: "Efetue o pagamento",
-    description: "Pague R$14,99 mensais via PIX e envie o comprovante"
+    description: "Pague R$19,90 mensais via PIX e envie o comprovante"
   },
   {
     number: "02",
@@ -113,7 +113,7 @@ const steps = [
 const faqs = [
   {
     question: "Qual o valor do TeraDay?",
-    answer: "O TeraDay custa R$14,99 por mês via PIX. Você terá acesso a todas as funcionalidades enquanto sua assinatura estiver ativa."
+    answer: "O TeraDay custa R$19,90 por mês via PIX. Você terá acesso a todas as funcionalidades enquanto sua assinatura estiver ativa."
   },
   {
     question: "Como funciona o pagamento?",
@@ -185,7 +185,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
             <Leaf className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary">Apenas R$14,99/mês</span>
+            <span className="text-sm text-primary">Apenas R$19,90/mês</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
@@ -207,7 +207,7 @@ export function LandingPage() {
               className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto"
               onClick={() => setIsPaymentModalOpen(true)}
             >
-              Assinar Agora - R$14,99/mês
+              Assinar Agora - R$19,90/mês
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <a href="#funcionalidades">
@@ -356,7 +356,7 @@ export function LandingPage() {
               <span className="text-primary"> Mensal</span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Acesso completo por apenas R$14,99 mensais.
+              Acesso completo por apenas R$19,90 mensais.
             </p>
           </div>
 
@@ -367,7 +367,7 @@ export function LandingPage() {
             
             <div className="text-center mb-8">
               <div className="flex items-baseline justify-center gap-2 mb-2">
-                <span className="text-5xl md:text-6xl font-bold">R$ 14,99</span>
+                <span className="text-5xl md:text-6xl font-bold">R$ 19,90</span>
                 <span className="text-gray-400">/ mês</span>
               </div>
               <p className="text-gray-400">Pagamento via PIX</p>
