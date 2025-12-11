@@ -18,7 +18,7 @@ const PIX_KEY = "pixmusetera@gmail.com";
 const WHATSAPP_NUMBER = "5581986953506";
 const MERCHANT_NAME = "TERADAY";
 const MERCHANT_CITY = "RECIFE";
-const AMOUNT = 19.90;
+const AMOUNT = 14.99;
 
 // Função para gerar payload PIX no formato EMV/BRCode
 function generatePixPayload(): string {
@@ -162,7 +162,7 @@ export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      "Olá! Acabei de efetuar o pagamento da assinatura mensal do TeraDay (R$19,90). Segue o comprovante:"
+      "Olá! Acabei de efetuar o pagamento da assinatura mensal do TeraDay (R$14,99). Segue o comprovante:"
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
   };
@@ -189,7 +189,7 @@ export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
 
           {/* Valor */}
           <div className="text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-primary">R$ 19,90</p>
+            <p className="text-2xl sm:text-3xl font-bold text-primary">R$ 14,99</p>
             <p className="text-gray-400 text-xs sm:text-sm">Assinatura Mensal</p>
           </div>
 
