@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Users, TrendingUp, DollarSign, Calendar, ChevronRight, User } from "lucide-react";
+import { 
+  RefreshCw, Users, TrendingUp, DollarSign, ChevronRight, User, 
+  UserPlus, Copy, FileText, CreditCard, BarChart3, Sparkles,
+  Calendar
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -14,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RegisterProfessionalSheet } from "@/components/RegisterProfessionalSheet";
 
 interface ProfessionalSummary {
   professional_id: string;
@@ -37,6 +42,38 @@ export function ManagerDashboard() {
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [managerName, setManagerName] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [showRegisterSheet, setShowRegisterSheet] = useState(false);
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  const fetchManagerInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setManagerName(profile.full_name);
+          // Use profile id as invite code (first 8 chars)
+          setInviteCode(profile.id.substring(0, 8).toUpperCase());
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching manager info:', error);
+    }
+  };
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -80,6 +117,10 @@ export function ManagerDashboard() {
   };
 
   useEffect(() => {
+    fetchManagerInfo();
+  }, []);
+
+  useEffect(() => {
     fetchSummary();
   }, [selectedMonth, selectedYear]);
 
@@ -107,32 +148,58 @@ export function ManagerDashboard() {
     }).format(value);
   };
 
-  return (
-    <div className="min-h-screen gradient-surface pb-24">
-      {/* Header */}
-      <div className="bg-card/50 backdrop-blur-sm border-b border-border/50 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-xl font-bold text-foreground">Painel do Gestor</h1>
-            </div>
-            <Button variant="outline" size="sm" onClick={fetchSummary} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
-          </div>
-        </div>
-      </div>
+  const copyInviteCode = () => {
+    if (inviteCode) {
+      navigator.clipboard.writeText(inviteCode);
+      toast({
+        title: "Código copiado!",
+        description: "Compartilhe com seus profissionais",
+      });
+    }
+  };
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Filters */}
-        <div className="flex gap-3 mb-6">
+  const averageSessionsPerProfessional = summaryData && summaryData.total_professionals > 0
+    ? Math.round(summaryData.grand_total_sessions / summaryData.total_professionals)
+    : 0;
+
+  const firstName = managerName?.split(' ')[0];
+
+  // Skeleton loading component
+  const SkeletonCard = () => (
+    <div className="animate-pulse">
+      <div className="h-24 bg-muted/50 rounded-xl"></div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen gradient-surface pb-32">
+      {/* Hero Section */}
+      <header className="px-5 pt-10 pb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-lg font-semibold text-foreground mb-1">
+              {getGreeting()}{firstName ? `, ${firstName}` : ''}! 👋
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={fetchSummary} 
+            disabled={loading}
+            className="rounded-full"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+
+        {/* Period Filter - Elegant Pills */}
+        <div className="flex items-center gap-2 mt-4">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
           <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[130px] h-9 rounded-full bg-secondary/50 border-0">
               <SelectValue placeholder="Mês" />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +211,7 @@ export function ManagerDashboard() {
             </SelectContent>
           </Select>
           <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-            <SelectTrigger className="w-[100px]">
+            <SelectTrigger className="w-[90px] h-9 rounded-full bg-secondary/50 border-0">
               <SelectValue placeholder="Ano" />
             </SelectTrigger>
             <SelectContent>
@@ -156,106 +223,230 @@ export function ManagerDashboard() {
             </SelectContent>
           </Select>
         </div>
+      </header>
 
+      <main className="px-5 space-y-6">
+        {/* KPI Cards */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <div className="grid grid-cols-2 gap-3">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
         ) : summaryData ? (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card className="bg-card/80 border-border/50">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-primary/20">
-                    <Users className="h-6 w-6 text-primary" />
+            <div className="grid grid-cols-2 gap-3">
+              {/* Profissionais */}
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-full bg-primary/20">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">{summaryData.total_professionals}</p>
-                    <p className="text-sm text-muted-foreground">Profissionais</p>
-                  </div>
+                  <p className="text-3xl font-bold text-foreground">{summaryData.total_professionals}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Profissionais ativos</p>
                 </CardContent>
               </Card>
-              <Card className="bg-card/80 border-border/50">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-blue-500/20">
-                    <TrendingUp className="h-6 w-6 text-blue-500" />
+
+              {/* Sessões */}
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-full bg-blue-500/20">
+                      <TrendingUp className="h-4 w-4 text-blue-500" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">{summaryData.grand_total_sessions}</p>
-                    <p className="text-sm text-muted-foreground">Total Sessões</p>
-                  </div>
+                  <p className="text-3xl font-bold text-foreground">{summaryData.grand_total_sessions}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Sessões no mês</p>
                 </CardContent>
               </Card>
-              <Card className="bg-card/80 border-border/50">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-green-500/20">
-                    <DollarSign className="h-6 w-6 text-green-500" />
+
+              {/* Faturamento */}
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-transparent">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-full bg-emerald-500/20">
+                      <DollarSign className="h-4 w-4 text-emerald-500" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(summaryData.grand_total_value)}</p>
-                    <p className="text-sm text-muted-foreground">Valor Total</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCurrency(summaryData.grand_total_value)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Faturamento total</p>
+                </CardContent>
+              </Card>
+
+              {/* Média */}
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-purple-500/20 via-purple-500/10 to-transparent">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-full bg-purple-500/20">
+                      <BarChart3 className="h-4 w-4 text-purple-500" />
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-foreground">{averageSessionsPerProfessional}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Média sessões/prof.</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Professionals List */}
-            <Card className="bg-card/80 border-border/50">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Profissionais - {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {summaryData.summaries.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <User className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">Nenhum profissional vinculado.</p>
+            {/* Quick Actions */}
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Ações Rápidas
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50 border-border/50 hover:bg-primary/10 hover:border-primary/30"
+                  onClick={() => setShowRegisterSheet(true)}
+                >
+                  <UserPlus className="h-5 w-5 text-primary" />
+                  <span className="text-xs font-medium">Novo Profissional</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50 border-border/50 hover:bg-blue-500/10 hover:border-blue-500/30"
+                  onClick={copyInviteCode}
+                >
+                  <Copy className="h-5 w-5 text-blue-500" />
+                  <span className="text-xs font-medium">Copiar Código</span>
+                </Button>
+              </div>
+
+              {/* Invite Code Display */}
+              {inviteCode && (
+                <div 
+                  onClick={copyInviteCode}
+                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/30 cursor-pointer hover:bg-secondary/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-xs text-muted-foreground">Código de convite:</span>
                   </div>
-                ) : (
-                  <div className="divide-y divide-border/50">
-                    {summaryData.summaries.map((prof) => (
+                  <span className="font-mono font-bold text-primary">{inviteCode}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Professionals List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Sua Equipe
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                </span>
+              </div>
+
+              {summaryData.summaries.length === 0 ? (
+                /* Empty State */
+                <Card className="border-dashed border-2 border-border/50 bg-transparent">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      Monte sua equipe!
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
+                      Cadastre profissionais para acompanhar sessões e faturamento em tempo real.
+                    </p>
+                    <Button 
+                      onClick={() => setShowRegisterSheet(true)}
+                      className="gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Cadastrar Primeiro Profissional
+                    </Button>
+                    
+                    {inviteCode && (
+                      <div className="mt-6 pt-6 border-t border-border/30">
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Ou compartilhe seu código de convite:
+                        </p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); copyInviteCode(); }}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 hover:bg-secondary transition-colors"
+                        >
+                          <span className="font-mono font-bold text-primary">{inviteCode}</span>
+                          <Copy className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {summaryData.summaries.map((prof, index) => {
+                    // Generate avatar color based on name
+                    const colors = ['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
+                    const colorIndex = (prof.full_name?.charCodeAt(0) || index) % colors.length;
+                    const avatarColor = colors[colorIndex];
+                    const initial = prof.full_name?.charAt(0).toUpperCase() || '?';
+
+                    return (
                       <button
                         key={prof.user_id}
                         onClick={() => navigate(`/manager/professional/${prof.user_id}`)}
-                        className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                        className="w-full p-4 flex items-center justify-between rounded-xl bg-card/60 border border-border/30 hover:bg-card hover:border-border/50 transition-all group"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-primary/10">
-                            <User className="h-5 w-5 text-primary" />
+                          <div className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center`}>
+                            <span className="text-white font-semibold text-sm">{initial}</span>
                           </div>
                           <div className="text-left">
-                            <p className="font-medium text-foreground">
+                            <p className="font-medium text-foreground group-hover:text-primary transition-colors">
                               {prof.full_name || 'Sem nome'}
                             </p>
-                            <p className="text-sm text-muted-foreground">
-                              {prof.total_sessions} sessões
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-muted-foreground">
+                                {prof.total_sessions} sessões
+                              </span>
+                              {prof.total_sessions > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-500">
+                                  ativo
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <span className="font-semibold text-primary">
                             {formatCurrency(prof.total_value)}
                           </span>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </button>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <Card className="bg-card/80 border-border/50">
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground">Não foi possível carregar os dados.</p>
+              <Button variant="outline" onClick={fetchSummary} className="mt-4">
+                Tentar novamente
+              </Button>
             </CardContent>
           </Card>
         )}
-      </div>
+      </main>
+
+      {/* Register Professional Sheet */}
+      <RegisterProfessionalSheet
+        open={showRegisterSheet}
+        onOpenChange={setShowRegisterSheet}
+        onSuccess={() => {
+          setShowRegisterSheet(false);
+          fetchSummary();
+        }}
+      />
     </div>
   );
 }
