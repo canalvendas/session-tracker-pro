@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Calendar, TrendingUp, DollarSign, User } from "lucide-react";
+import { ArrowLeft, RefreshCw, Calendar, TrendingUp, DollarSign, Wallet, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RegisterPaymentModal } from "@/components/RegisterPaymentModal";
 
 interface Session {
   id: string;
@@ -36,6 +37,20 @@ interface Professional {
   email: string;
 }
 
+interface Payment {
+  id: string;
+  amount: number;
+  payment_date: string;
+  reference_month: number;
+  reference_year: number;
+  notes: string | null;
+}
+
+const monthNames = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
 export function ManagerProfessionalDetail() {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
@@ -43,8 +58,10 @@ export function ManagerProfessionalDetail() {
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [professional, setProfessional] = useState<Professional | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const fetchProfessionalData = async () => {
     if (!userId) return;
@@ -88,6 +105,24 @@ export function ManagerProfessionalDetail() {
 
       const sessionsResult = await sessionsResponse.json();
       setSessions(sessionsResult.sessions || []);
+
+      // Fetch payments
+      if (professional) {
+        const paymentsResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=payments&professionalId=${professional.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (paymentsResponse.ok) {
+          const paymentsResult = await paymentsResponse.json();
+          setPayments(paymentsResult.payments || []);
+        }
+      }
     } catch (error: any) {
       console.error('Error fetching data:', error);
       if (error.message?.includes('Forbidden') || error.message?.includes('not linked')) {
@@ -111,7 +146,30 @@ export function ManagerProfessionalDetail() {
 
   useEffect(() => {
     fetchProfessionalData();
-  }, [userId, selectedMonth, selectedYear]);
+  }, [userId, selectedMonth, selectedYear, professional?.id]);
+
+  const fetchPayments = async () => {
+    if (!professional) return;
+    
+    try {
+      const paymentsResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=payments&professionalId=${professional.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (paymentsResponse.ok) {
+        const paymentsResult = await paymentsResponse.json();
+        setPayments(paymentsResult.payments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    }
+  };
 
   const months = [
     { value: 1, label: 'Janeiro' },
@@ -175,6 +233,18 @@ export function ManagerProfessionalDetail() {
               Atualizar
             </Button>
           </div>
+          
+          {/* Payment Button */}
+          {professional && (
+            <Button 
+              size="sm" 
+              className="mt-3 w-full sm:w-auto"
+              onClick={() => setShowPaymentModal(true)}
+            >
+              <Wallet className="h-4 w-4 mr-2" />
+              Registrar Pagamento
+            </Button>
+          )}
         </div>
       </div>
 
@@ -327,9 +397,70 @@ export function ManagerProfessionalDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Payment History */}
+            <Card className="bg-card/80 border-border/50 mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Wallet className="h-5 w-5" />
+                  Histórico de Pagamentos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {payments.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">Nenhum pagamento registrado.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50">
+                    {payments.slice(0, 5).map((payment) => {
+                      const formattedDate = format(
+                        new Date(payment.payment_date + "T12:00:00"),
+                        "d 'de' MMMM",
+                        { locale: ptBR }
+                      );
+                      const paymentMonth = monthNames[payment.reference_month - 1];
+
+                      return (
+                        <div key={payment.id} className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                <span className="font-medium text-foreground">
+                                  {paymentMonth}/{payment.reference_year}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Pago em {formattedDate}
+                              </p>
+                            </div>
+                            <span className="text-lg font-bold text-primary">
+                              {formatCurrency(Number(payment.amount))}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
       </div>
+
+      {/* Payment Modal */}
+      {professional && (
+        <RegisterPaymentModal
+          open={showPaymentModal}
+          onOpenChange={setShowPaymentModal}
+          professionalId={professional.id}
+          professionalName={professional.full_name || "Profissional"}
+          onSuccess={fetchPayments}
+        />
+      )}
     </div>
   );
 }

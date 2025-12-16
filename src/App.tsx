@@ -22,6 +22,7 @@ import { PendingAccessPage } from "@/pages/PendingAccessPage";
 import { AdminPage } from "@/pages/AdminPage";
 import { ManagerDashboard } from "@/pages/ManagerDashboard";
 import { ManagerProfessionalDetail } from "@/pages/ManagerProfessionalDetail";
+import { PaymentHistoryPage } from "@/pages/PaymentHistoryPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,7 +105,7 @@ function AppContent() {
       <PWAInstallPrompt />
       <Routes>
         {/* Common routes for all authenticated users */}
-        <Route path="/" element={<Dashboard stats={stats} therapistName={profile.full_name} />} />
+        <Route path="/" element={<Dashboard stats={stats} therapistName={profile.full_name} userId={user.id} isLinkedProfessional={isLinkedProfessional} />} />
         <Route
           path="/calendar"
           element={
@@ -161,6 +162,11 @@ function AppContent() {
             />
           }
         />
+
+        {/* Payment history for linked professionals */}
+        {isLinkedProfessional && (
+          <Route path="/pagamentos" element={<PaymentHistoryPage user={user} />} />
+        )}
 
         {/* Admin routes */}
         {isAdmin && <Route path="/admin" element={<AdminPage />} />}

@@ -4,6 +4,7 @@ import { CalendarCheck, TrendingUp, Wallet, Calendar } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { PaymentConfirmationCard } from "@/components/PaymentConfirmationCard";
 
 interface DashboardProps {
   stats: {
@@ -12,9 +13,11 @@ interface DashboardProps {
     monthly: { sessions: number; value: number };
   };
   therapistName?: string | null;
+  userId?: string;
+  isLinkedProfessional?: boolean;
 }
 
-export function Dashboard({ stats, therapistName }: DashboardProps) {
+export function Dashboard({ stats, therapistName, userId, isLinkedProfessional }: DashboardProps) {
   const navigate = useNavigate();
   const today = new Date();
   const firstName = therapistName?.split(' ')[0];
@@ -71,6 +74,11 @@ export function Dashboard({ stats, therapistName }: DashboardProps) {
             variant="secondary"
           />
         </div>
+
+        {/* Payment Confirmation Card - Only for linked professionals */}
+        {isLinkedProfessional && userId && (
+          <PaymentConfirmationCard userId={userId} />
+        )}
 
         {/* Quick Actions */}
         <Card variant="elevated" className="mt-6">
