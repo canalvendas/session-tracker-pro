@@ -75,10 +75,15 @@ export function RegisterPaymentModal({
   const isEditMode = !!editPayment;
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i + 1);
 
+  // Formatar número para moeda brasileira
+  const formatToBRL = (value: number): string => {
+    return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   // Preencher formulário quando em modo edição
   useEffect(() => {
     if (editPayment && open) {
-      setAmount(String(editPayment.amount).replace(".", ","));
+      setAmount(formatToBRL(editPayment.amount));
       setPaymentDate(editPayment.payment_date);
       setReferenceMonth(editPayment.reference_month);
       setReferenceYear(editPayment.reference_year);
@@ -96,7 +101,8 @@ export function RegisterPaymentModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const numAmount = parseFloat(amount.replace(/[^\d,.-]/g, "").replace(",", "."));
+    // Parse formato brasileiro: remove pontos de milhar, troca vírgula por ponto
+    const numAmount = parseFloat(amount.replace(/\./g, "").replace(",", "."));
     
     if (isNaN(numAmount) || numAmount <= 0) {
       toast({
@@ -189,8 +195,17 @@ export function RegisterPaymentModal({
   };
 
   const formatCurrencyInput = (value: string) => {
-    const cleanValue = value.replace(/[^\d,.-]/g, "");
-    setAmount(cleanValue);
+    // Remove tudo exceto dígitos
+    let cleanValue = value.replace(/\D/g, "");
+    
+    if (cleanValue.length === 0) {
+      setAmount("");
+      return;
+    }
+    
+    // Converte para centavos e formata
+    const numValue = parseInt(cleanValue, 10) / 100;
+    setAmount(numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
   return (
