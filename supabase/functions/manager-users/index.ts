@@ -375,28 +375,39 @@ serve(async (req) => {
       }
 
       // Atualizar pagamento
-      const { data: payment, error: paymentError } = await supabaseAdmin
-        .from('professional_payments')
-        .update({
-          amount,
-          payment_date: paymentDate,
-          reference_month: referenceMonth,
-          reference_year: referenceYear,
-          notes
-        })
-        .eq('id', paymentId)
-        .select()
-        .single();
+      try {
+        const { data: payment, error: paymentError } = await supabaseAdmin
+          .from('professional_payments')
+          .update({
+            amount,
+            payment_date: paymentDate,
+            reference_month: referenceMonth,
+            reference_year: referenceYear,
+            notes: notes || null
+          })
+          .eq('id', paymentId)
+          .select()
+          .single();
 
-      if (paymentError) {
-        console.error('Error updating payment:', paymentError);
-        throw paymentError;
+        if (paymentError) {
+          console.error('Supabase error updating payment:', JSON.stringify(paymentError));
+          return new Response(JSON.stringify({ error: paymentError.message || 'Database error' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        console.log('Payment updated successfully:', payment.id);
+        return new Response(JSON.stringify({ success: true, payment }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (dbError: any) {
+        console.error('Unexpected DB error:', dbError?.message || dbError);
+        return new Response(JSON.stringify({ error: 'Database connection error, please try again' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-
-      console.log('Payment updated successfully:', payment.id);
-      return new Response(JSON.stringify({ success: true, payment }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
 
     // DELETE: Excluir pagamento
