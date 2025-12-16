@@ -95,6 +95,9 @@ function AppContent() {
 
   // Check if user should see the add session button (professionals and admins can add sessions)
   const canAddSessions = !isManager || isAdmin;
+  
+  // Check if user is a professional linked to a manager (has manager_id)
+  const isLinkedProfessional = Boolean(profile.manager_id);
 
   return (
     <div className="min-h-screen">
@@ -154,6 +157,7 @@ function AppContent() {
               onAddClinic={addClinic}
               onUpdateClinic={updateClinic}
               onDeleteClinic={deleteClinic}
+              isLinkedProfessional={isLinkedProfessional}
             />
           }
         />

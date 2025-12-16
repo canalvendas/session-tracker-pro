@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Calendar, Save, LogOut, Moon, Sun, Monitor, Shield } from "lucide-react";
+import { Calendar, Save, LogOut, Moon, Sun, Monitor, Shield, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ClinicManager } from "@/components/ClinicManager";
@@ -25,6 +25,7 @@ interface SettingsPageProps {
   onAddClinic: (data: ClinicFormData) => Promise<Clinic | null>;
   onUpdateClinic: (id: string, data: ClinicFormData) => Promise<void>;
   onDeleteClinic: (id: string) => Promise<void>;
+  isLinkedProfessional?: boolean;
 }
 
 export function SettingsPage({ 
@@ -35,6 +36,7 @@ export function SettingsPage({
   onAddClinic,
   onUpdateClinic,
   onDeleteClinic,
+  isLinkedProfessional = false,
 }: SettingsPageProps) {
   const [weekStartsOn, setWeekStartsOn] = useState<"0" | "1">(settings.weekStartsOn.toString() as "0" | "1");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -105,13 +107,31 @@ export function SettingsPage({
         {/* Manager Professionals Section - Only visible to managers */}
         {isManager && <ManagerProfessionalsSection />}
 
-        {/* Clinic Manager - Main feature now */}
-        <ClinicManager
-          clinics={clinics}
-          onAdd={onAddClinic}
-          onUpdate={onUpdateClinic}
-          onDelete={onDeleteClinic}
-        />
+        {/* Clinic Manager - Hidden for professionals linked to managers */}
+        {!isLinkedProfessional ? (
+          <ClinicManager
+            clinics={clinics}
+            onAdd={onAddClinic}
+            onUpdate={onUpdateClinic}
+            onDelete={onDeleteClinic}
+          />
+        ) : (
+          <Card variant="glass" className="border-primary/20 bg-primary/5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Clínicas Gerenciadas
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Suas clínicas e valores de sessão são gerenciados pelo seu gestor.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
         {/* Week Start */}
         <Card variant="elevated">
           <div className="flex items-center gap-3 mb-4">
