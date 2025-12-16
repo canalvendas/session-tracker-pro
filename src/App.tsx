@@ -105,7 +105,14 @@ function AppContent() {
       <PWAInstallPrompt />
       <Routes>
         {/* Common routes for all authenticated users */}
-        <Route path="/" element={<Dashboard stats={stats} therapistName={profile.full_name} userId={user.id} isLinkedProfessional={isLinkedProfessional} />} />
+        <Route 
+          path="/" 
+          element={
+            isManager && !isAdmin 
+              ? <ManagerDashboard /> 
+              : <Dashboard stats={stats} therapistName={profile.full_name} userId={user.id} isLinkedProfessional={isLinkedProfessional} />
+          } 
+        />
         <Route
           path="/calendar"
           element={
