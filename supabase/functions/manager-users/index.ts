@@ -334,6 +334,125 @@ serve(async (req) => {
       });
     }
 
+    // PUT: Atualizar pagamento
+    if (req.method === 'PUT' && action === 'update-payment') {
+      const body = await req.json();
+      const { paymentId, amount, paymentDate, referenceMonth, referenceYear, notes } = body;
+
+      console.log('Updating payment:', { paymentId, amount, paymentDate, referenceMonth, referenceYear });
+
+      if (!paymentId || !amount || !paymentDate || !referenceMonth || !referenceYear) {
+        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Buscar profile do gestor
+      const { data: managerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!managerProfile) {
+        throw new Error('Manager profile not found');
+      }
+
+      // Verificar se o pagamento pertence ao gestor
+      const { data: existingPayment } = await supabaseAdmin
+        .from('professional_payments')
+        .select('id, manager_id')
+        .eq('id', paymentId)
+        .single();
+
+      if (!existingPayment || existingPayment.manager_id !== managerProfile.id) {
+        return new Response(JSON.stringify({ error: 'Payment not found or not authorized' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Atualizar pagamento
+      const { data: payment, error: paymentError } = await supabaseAdmin
+        .from('professional_payments')
+        .update({
+          amount,
+          payment_date: paymentDate,
+          reference_month: referenceMonth,
+          reference_year: referenceYear,
+          notes
+        })
+        .eq('id', paymentId)
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error updating payment:', paymentError);
+        throw paymentError;
+      }
+
+      console.log('Payment updated successfully:', payment.id);
+      return new Response(JSON.stringify({ success: true, payment }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // DELETE: Excluir pagamento
+    if (req.method === 'DELETE' && action === 'delete-payment') {
+      const paymentId = url.searchParams.get('paymentId');
+
+      console.log('Deleting payment:', paymentId);
+
+      if (!paymentId) {
+        return new Response(JSON.stringify({ error: 'paymentId is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Buscar profile do gestor
+      const { data: managerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!managerProfile) {
+        throw new Error('Manager profile not found');
+      }
+
+      // Verificar se o pagamento pertence ao gestor
+      const { data: existingPayment } = await supabaseAdmin
+        .from('professional_payments')
+        .select('id, manager_id')
+        .eq('id', paymentId)
+        .single();
+
+      if (!existingPayment || existingPayment.manager_id !== managerProfile.id) {
+        return new Response(JSON.stringify({ error: 'Payment not found or not authorized' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Excluir pagamento
+      const { error: deleteError } = await supabaseAdmin
+        .from('professional_payments')
+        .delete()
+        .eq('id', paymentId);
+
+      if (deleteError) {
+        console.error('Error deleting payment:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('Payment deleted successfully:', paymentId);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // POST: Criar novo profissional
     if (req.method === 'POST' && action === 'create-professional') {
       const body = await req.json();
