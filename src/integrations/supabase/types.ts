@@ -53,6 +53,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_paid: boolean
+          manager_id: string | null
           session_value: number
           updated_at: string
           user_id: string
@@ -63,6 +64,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_paid?: boolean
+          manager_id?: string | null
           session_value?: number
           updated_at?: string
           user_id: string
@@ -73,12 +75,21 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_paid?: boolean
+          manager_id?: string | null
           session_value?: number
           updated_at?: string
           user_id?: string
           week_starts_on?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {
@@ -153,7 +164,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "manager" | "professional"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -281,7 +292,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "manager", "professional"],
     },
   },
 } as const
