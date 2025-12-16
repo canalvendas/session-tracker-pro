@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { DollarSign, Calendar, FileText, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -24,12 +23,22 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+interface Payment {
+  id: string;
+  amount: number;
+  payment_date: string;
+  reference_month: number;
+  reference_year: number;
+  notes: string | null;
+}
+
 interface RegisterPaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   professionalId: string;
   professionalName: string;
   onSuccess: () => void;
+  editPayment?: Payment | null;
 }
 
 const months = [
@@ -53,6 +62,7 @@ export function RegisterPaymentModal({
   professionalId,
   professionalName,
   onSuccess,
+  editPayment,
 }: RegisterPaymentModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -62,7 +72,26 @@ export function RegisterPaymentModal({
   const [referenceYear, setReferenceYear] = useState(new Date().getFullYear());
   const [notes, setNotes] = useState("");
 
+  const isEditMode = !!editPayment;
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i + 1);
+
+  // Preencher formulário quando em modo edição
+  useEffect(() => {
+    if (editPayment && open) {
+      setAmount(String(editPayment.amount).replace(".", ","));
+      setPaymentDate(editPayment.payment_date);
+      setReferenceMonth(editPayment.reference_month);
+      setReferenceYear(editPayment.reference_year);
+      setNotes(editPayment.notes || "");
+    } else if (!editPayment && open) {
+      // Reset form for new payment
+      setAmount("");
+      setPaymentDate(format(new Date(), "yyyy-MM-dd"));
+      setReferenceMonth(new Date().getMonth() + 1);
+      setReferenceYear(new Date().getFullYear());
+      setNotes("");
+    }
+  }, [editPayment, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,49 +109,78 @@ export function RegisterPaymentModal({
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=register-payment`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            professionalId,
-            amount: numAmount,
-            paymentDate,
-            referenceMonth,
-            referenceYear,
-            notes: notes.trim() || null,
-          }),
-        }
-      );
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erro ao registrar pagamento");
+      if (isEditMode) {
+        // Atualizar pagamento existente
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=update-payment`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              paymentId: editPayment.id,
+              amount: numAmount,
+              paymentDate,
+              referenceMonth,
+              referenceYear,
+              notes: notes.trim() || null,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao atualizar pagamento");
+        }
+
+        toast({
+          title: "Pagamento atualizado",
+          description: `Pagamento de R$ ${numAmount.toFixed(2)} atualizado com sucesso.`,
+        });
+      } else {
+        // Criar novo pagamento
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=register-payment`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              professionalId,
+              amount: numAmount,
+              paymentDate,
+              referenceMonth,
+              referenceYear,
+              notes: notes.trim() || null,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao registrar pagamento");
+        }
+
+        toast({
+          title: "Pagamento registrado",
+          description: `Pagamento de R$ ${numAmount.toFixed(2)} registrado com sucesso.`,
+        });
       }
 
-      toast({
-        title: "Pagamento registrado",
-        description: `Pagamento de R$ ${numAmount.toFixed(2)} registrado com sucesso.`,
-      });
-
-      // Reset form
-      setAmount("");
-      setPaymentDate(format(new Date(), "yyyy-MM-dd"));
-      setReferenceMonth(new Date().getMonth() + 1);
-      setReferenceYear(new Date().getFullYear());
-      setNotes("");
-      
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Error registering payment:", error);
+      console.error("Error saving payment:", error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível registrar o pagamento.",
+        description: error.message || "Não foi possível salvar o pagamento.",
         variant: "destructive",
       });
     } finally {
@@ -131,7 +189,6 @@ export function RegisterPaymentModal({
   };
 
   const formatCurrencyInput = (value: string) => {
-    // Remove non-numeric characters except comma and dot
     const cleanValue = value.replace(/[^\d,.-]/g, "");
     setAmount(cleanValue);
   };
@@ -144,10 +201,11 @@ export function RegisterPaymentModal({
             <div className="p-2 rounded-full bg-primary/20">
               <DollarSign className="h-5 w-5 text-primary" />
             </div>
-            Registrar Pagamento
+            {isEditMode ? "Editar Pagamento" : "Registrar Pagamento"}
           </DialogTitle>
           <DialogDescription>
-            Registre um pagamento para <span className="font-semibold text-foreground">{professionalName}</span>
+            {isEditMode ? "Edite os dados do pagamento para " : "Registre um pagamento para "}
+            <span className="font-semibold text-foreground">{professionalName}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -244,10 +302,10 @@ export function RegisterPaymentModal({
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Registrando...
+                  {isEditMode ? "Salvando..." : "Registrando..."}
                 </>
               ) : (
-                "Confirmar Pagamento"
+                isEditMode ? "Salvar Alterações" : "Confirmar Pagamento"
               )}
             </Button>
           </DialogFooter>

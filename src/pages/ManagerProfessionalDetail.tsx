@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Calendar, TrendingUp, DollarSign, Wallet, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Calendar, TrendingUp, DollarSign, Wallet, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { RegisterPaymentModal } from "@/components/RegisterPaymentModal";
 
 interface Session {
@@ -62,6 +72,9 @@ export function ManagerProfessionalDetail() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchProfessionalData = async () => {
     if (!userId) return;
@@ -171,6 +184,58 @@ export function ManagerProfessionalDetail() {
     }
   };
 
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+
+    setDeleteLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=delete-payment&paymentId=${deletingPayment.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao excluir pagamento");
+      }
+
+      toast({
+        title: "Pagamento excluído",
+        description: "O pagamento foi excluído com sucesso.",
+      });
+
+      setDeletingPayment(null);
+      fetchPayments();
+    } catch (error: any) {
+      console.error("Error deleting payment:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível excluir o pagamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    setEditingPayment(payment);
+    setShowPaymentModal(true);
+  };
+
+  const handleClosePaymentModal = (open: boolean) => {
+    setShowPaymentModal(open);
+    if (!open) {
+      setEditingPayment(null);
+    }
+  };
+
   const months = [
     { value: 1, label: 'Janeiro' },
     { value: 2, label: 'Fevereiro' },
@@ -239,7 +304,10 @@ export function ManagerProfessionalDetail() {
             <Button 
               size="sm" 
               className="mt-3 w-full sm:w-auto"
-              onClick={() => setShowPaymentModal(true)}
+              onClick={() => {
+                setEditingPayment(null);
+                setShowPaymentModal(true);
+              }}
             >
               <Wallet className="h-4 w-4 mr-2" />
               Registrar Pagamento
@@ -425,7 +493,7 @@ export function ManagerProfessionalDetail() {
                       return (
                         <div key={payment.id} className="p-4">
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                                 <span className="font-medium text-foreground">
@@ -435,10 +503,33 @@ export function ManagerProfessionalDetail() {
                               <p className="text-sm text-muted-foreground mt-1">
                                 Pago em {formattedDate}
                               </p>
+                              {payment.notes && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">
+                                  {payment.notes}
+                                </p>
+                              )}
                             </div>
-                            <span className="text-lg font-bold text-primary">
-                              {formatCurrency(Number(payment.amount))}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-primary">
+                                {formatCurrency(Number(payment.amount))}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditPayment(payment)}
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setDeletingPayment(payment)}
+                              >
+                                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -455,12 +546,39 @@ export function ManagerProfessionalDetail() {
       {professional && (
         <RegisterPaymentModal
           open={showPaymentModal}
-          onOpenChange={setShowPaymentModal}
+          onOpenChange={handleClosePaymentModal}
           professionalId={professional.id}
-          professionalName={professional.full_name || "Profissional"}
+          professionalName={professional.full_name || 'Profissional'}
           onSuccess={fetchPayments}
+          editPayment={editingPayment}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingPayment} onOpenChange={(open) => !open && setDeletingPayment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este pagamento de{" "}
+              <span className="font-semibold text-foreground">
+                {deletingPayment && formatCurrency(Number(deletingPayment.amount))}
+              </span>
+              ? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePayment}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
