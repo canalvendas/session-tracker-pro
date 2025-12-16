@@ -227,6 +227,95 @@ serve(async (req) => {
       });
     }
 
+    // POST: Criar novo profissional
+    if (req.method === 'POST' && action === 'create-professional') {
+      const body = await req.json();
+      const { email, password, fullName } = body;
+
+      console.log('Creating professional for manager:', user.id, { email, fullName });
+
+      if (!email || !password || !fullName) {
+        return new Response(JSON.stringify({ error: 'email, password and fullName are required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Buscar profile do gestor
+      const { data: managerProfile, error: managerError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (managerError || !managerProfile) {
+        console.error('Error fetching manager profile:', managerError);
+        throw new Error('Manager profile not found');
+      }
+
+      // Criar usuário no auth
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName }
+      });
+
+      if (createError) {
+        console.error('Error creating user:', createError);
+        if (createError.message.includes('already registered') || createError.message.includes('already exists')) {
+          return new Response(JSON.stringify({ error: 'Este email já está cadastrado' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        throw createError;
+      }
+
+      if (!newUser.user) {
+        throw new Error('User creation failed');
+      }
+
+      console.log('User created:', newUser.user.id);
+
+      // Atualizar profile com manager_id e is_paid
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({ 
+          manager_id: managerProfile.id,
+          is_paid: true,
+          full_name: fullName
+        })
+        .eq('user_id', newUser.user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+        // Rollback: deletar usuário criado
+        await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+        throw profileError;
+      }
+
+      // Adicionar role 'professional'
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({ user_id: newUser.user.id, role: 'professional' });
+
+      if (roleError) {
+        console.error('Error adding role:', roleError);
+        // Não faz rollback aqui, profile já está configurado
+      }
+
+      console.log('Professional created successfully:', newUser.user.id);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        user_id: newUser.user.id,
+        message: 'Professional created successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
