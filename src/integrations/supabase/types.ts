@@ -162,6 +162,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_manager_of: {
+        Args: { _manager_user_id: string; _professional_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "manager" | "professional"

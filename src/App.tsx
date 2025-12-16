@@ -3,8 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useSupabaseSessionStore } from "@/hooks/useSupabaseSessionStore";
 import { usePWAUpdate } from "@/hooks/usePWAUpdate";
 import { BottomNav } from "@/components/BottomNav";
@@ -19,14 +20,17 @@ import { AuthPage } from "@/pages/AuthPage";
 import { LandingPage } from "@/pages/LandingPage";
 import { PendingAccessPage } from "@/pages/PendingAccessPage";
 import { AdminPage } from "@/pages/AdminPage";
+import { ManagerDashboard } from "@/pages/ManagerDashboard";
+import { ManagerProfessionalDetail } from "@/pages/ManagerProfessionalDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  usePWAUpdate(); // Monitora atualizações do PWA
+  usePWAUpdate();
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
+  const { role, loading: roleLoading, isAdmin, isManager } = useUserRole(user);
   
   const {
     settings,
@@ -55,7 +59,7 @@ function AppContent() {
   const stats = getStats();
 
   // Loading state
-  if (authLoading || (!isLoaded && user)) {
+  if (authLoading || (!isLoaded && user) || (user && roleLoading)) {
     return (
       <div className="min-h-screen gradient-surface flex items-center justify-center">
         <div className="animate-pulse-soft text-primary">
@@ -79,8 +83,8 @@ function AppContent() {
     );
   }
 
-  // Authenticated but not paid
-  if (!profile.is_paid) {
+  // Authenticated but not paid (only for non-admin/manager users)
+  if (!profile.is_paid && !isAdmin && !isManager) {
     return (
       <>
         <PWAInstallPrompt />
@@ -89,10 +93,14 @@ function AppContent() {
     );
   }
 
+  // Check if user should see the add session button (professionals and admins can add sessions)
+  const canAddSessions = !isManager || isAdmin;
+
   return (
     <div className="min-h-screen">
       <PWAInstallPrompt />
       <Routes>
+        {/* Common routes for all authenticated users */}
         <Route path="/" element={<Dashboard stats={stats} therapistName={profile.full_name} />} />
         <Route
           path="/calendar"
@@ -149,21 +157,40 @@ function AppContent() {
             />
           }
         />
-        <Route path="/admin" element={<AdminPage />} />
+
+        {/* Admin routes */}
+        {isAdmin && <Route path="/admin" element={<AdminPage />} />}
+
+        {/* Manager routes */}
+        {(isManager || isAdmin) && (
+          <>
+            <Route path="/manager" element={<ManagerDashboard />} />
+            <Route path="/manager/professional/:userId" element={<ManagerProfessionalDetail />} />
+          </>
+        )}
+
+        {/* Fallback */}
         <Route path="/auth" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       
-      <BottomNav onAddClick={() => setAddSheetOpen(true)} />
-      
-      <AddSessionSheet
-        open={addSheetOpen}
-        onOpenChange={setAddSheetOpen}
-        onAddSession={addSession}
-        sessionValue={settings.sessionValue}
-        clinics={clinics}
-        defaultClinic={getDefaultClinic()}
+      <BottomNav 
+        onAddClick={() => setAddSheetOpen(true)} 
+        isAdmin={isAdmin}
+        isManager={isManager}
+        canAddSessions={canAddSessions}
       />
+      
+      {canAddSessions && (
+        <AddSessionSheet
+          open={addSheetOpen}
+          onOpenChange={setAddSheetOpen}
+          onAddSession={addSession}
+          sessionValue={settings.sessionValue}
+          clinics={clinics}
+          defaultClinic={getDefaultClinic()}
+        />
+      )}
     </div>
   );
 }

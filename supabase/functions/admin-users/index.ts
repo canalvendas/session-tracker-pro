@@ -66,7 +66,7 @@ serve(async (req) => {
       
       const { data: pendingUsers, error: fetchError } = await supabaseAdmin
         .from('profiles')
-        .select('id, user_id, full_name, is_paid, created_at')
+        .select('id, user_id, full_name, is_paid, created_at, manager_id')
         .eq('is_paid', false)
         .order('created_at', { ascending: false });
 
@@ -75,19 +75,123 @@ serve(async (req) => {
         throw fetchError;
       }
 
-      // Buscar emails dos usuários
-      const usersWithEmail = await Promise.all(
+      // Buscar emails e roles dos usuários
+      const usersWithDetails = await Promise.all(
         (pendingUsers || []).map(async (profile) => {
           const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
+          const { data: roles } = await supabaseAdmin
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.user_id);
+          
           return {
             ...profile,
-            email: authUser?.user?.email || 'Email não disponível'
+            email: authUser?.user?.email || 'Email não disponível',
+            roles: roles?.map(r => r.role) || []
           };
         })
       );
 
-      console.log(`Found ${usersWithEmail.length} pending users`);
-      return new Response(JSON.stringify({ users: usersWithEmail }), {
+      console.log(`Found ${usersWithDetails.length} pending users`);
+      return new Response(JSON.stringify({ users: usersWithDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // GET: Listar todos os usuários
+    if (req.method === 'GET' && action === 'all') {
+      console.log('Fetching all users...');
+      
+      const { data: allUsers, error: fetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, user_id, full_name, is_paid, created_at, manager_id')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching all users:', fetchError);
+        throw fetchError;
+      }
+
+      // Buscar emails e roles dos usuários
+      const usersWithDetails = await Promise.all(
+        (allUsers || []).map(async (profile) => {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
+          const { data: roles } = await supabaseAdmin
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.user_id);
+
+          // Buscar nome do gestor se existir
+          let managerName = null;
+          if (profile.manager_id) {
+            const { data: managerProfile } = await supabaseAdmin
+              .from('profiles')
+              .select('full_name')
+              .eq('id', profile.manager_id)
+              .single();
+            managerName = managerProfile?.full_name;
+          }
+          
+          return {
+            ...profile,
+            email: authUser?.user?.email || 'Email não disponível',
+            roles: roles?.map(r => r.role) || [],
+            manager_name: managerName
+          };
+        })
+      );
+
+      console.log(`Found ${usersWithDetails.length} total users`);
+      return new Response(JSON.stringify({ users: usersWithDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // GET: Listar gestores
+    if (req.method === 'GET' && action === 'managers') {
+      console.log('Fetching managers...');
+      
+      const { data: managerRoles, error: rolesError } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'manager');
+
+      if (rolesError) throw rolesError;
+
+      const managerUserIds = managerRoles?.map(r => r.user_id) || [];
+      
+      if (managerUserIds.length === 0) {
+        return new Response(JSON.stringify({ managers: [] }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: managers, error: fetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, user_id, full_name, is_paid, created_at')
+        .in('user_id', managerUserIds);
+
+      if (fetchError) throw fetchError;
+
+      // Contar profissionais vinculados a cada gestor
+      const managersWithDetails = await Promise.all(
+        (managers || []).map(async (manager) => {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(manager.user_id);
+          const { count } = await supabaseAdmin
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('manager_id', manager.id);
+          
+          return {
+            ...manager,
+            email: authUser?.user?.email || 'Email não disponível',
+            professionals_count: count || 0
+          };
+        })
+      );
+
+      console.log(`Found ${managersWithDetails.length} managers`);
+      return new Response(JSON.stringify({ managers: managersWithDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -150,33 +254,126 @@ serve(async (req) => {
       });
     }
 
-    // GET: Listar todos os usuários
-    if (req.method === 'GET' && action === 'all') {
-      console.log('Fetching all users...');
+    // POST: Definir role do usuário
+    if (req.method === 'POST' && action === 'set-role') {
+      const { userId, role } = await req.json();
       
-      const { data: allUsers, error: fetchError } = await supabaseAdmin
-        .from('profiles')
-        .select('id, user_id, full_name, is_paid, created_at')
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching all users:', fetchError);
-        throw fetchError;
+      if (!userId || !role) {
+        return new Response(JSON.stringify({ error: 'userId and role are required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
-      // Buscar emails dos usuários
-      const usersWithEmail = await Promise.all(
-        (allUsers || []).map(async (profile) => {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
-          return {
-            ...profile,
-            email: authUser?.user?.email || 'Email não disponível'
-          };
-        })
-      );
+      const validRoles = ['admin', 'manager', 'professional'];
+      if (!validRoles.includes(role)) {
+        return new Response(JSON.stringify({ error: 'Invalid role' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-      console.log(`Found ${usersWithEmail.length} total users`);
-      return new Response(JSON.stringify({ users: usersWithEmail }), {
+      console.log('Setting role for user:', userId, role);
+
+      // Remover roles existentes (exceto admin se for o admin principal)
+      const { error: deleteError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .neq('role', 'admin'); // Não remove admin existente
+
+      if (deleteError) {
+        console.error('Error removing old roles:', deleteError);
+      }
+
+      // Adicionar novo role
+      const { error: insertError } = await supabaseAdmin
+        .from('user_roles')
+        .upsert({ user_id: userId, role }, { onConflict: 'user_id,role' });
+
+      if (insertError) {
+        console.error('Error setting role:', insertError);
+        throw insertError;
+      }
+
+      console.log('Role set successfully:', userId, role);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // POST: Remover role do usuário
+    if (req.method === 'POST' && action === 'remove-role') {
+      const { userId, role } = await req.json();
+      
+      if (!userId || !role) {
+        return new Response(JSON.stringify({ error: 'userId and role are required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Removing role from user:', userId, role);
+
+      const { error: deleteError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('role', role);
+
+      if (deleteError) {
+        console.error('Error removing role:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('Role removed successfully:', userId, role);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // POST: Vincular profissional a gestor
+    if (req.method === 'POST' && action === 'assign-manager') {
+      const { userId, managerId } = await req.json();
+      
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'userId is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Assigning manager to user:', userId, managerId);
+
+      // Buscar profile_id do gestor (se managerId for null, remove vínculo)
+      let managerProfileId = null;
+      if (managerId) {
+        const { data: managerProfile, error: managerError } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('user_id', managerId)
+          .single();
+
+        if (managerError) {
+          console.error('Error finding manager profile:', managerError);
+          throw new Error('Manager profile not found');
+        }
+        managerProfileId = managerProfile.id;
+      }
+
+      // Atualizar o profile do profissional com o manager_id
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({ manager_id: managerProfileId })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error assigning manager:', updateError);
+        throw updateError;
+      }
+
+      console.log('Manager assigned successfully');
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
