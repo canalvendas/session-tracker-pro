@@ -43,14 +43,6 @@ export function ManagerProfessionalsSection() {
       }
 
       // Buscar profissionais vinculados via edge function
-      const { data, error } = await supabase.functions.invoke('manager-users', {
-        body: null,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      // Precisamos fazer uma chamada GET com query params
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manager-users?action=professionals`,
         {
