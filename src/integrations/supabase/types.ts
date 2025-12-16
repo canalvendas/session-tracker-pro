@@ -47,6 +47,60 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          manager_id: string
+          notes: string | null
+          payment_date: string
+          professional_id: string
+          reference_month: number
+          reference_year: number
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          manager_id: string
+          notes?: string | null
+          payment_date: string
+          professional_id: string
+          reference_month: number
+          reference_year: number
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          manager_id?: string
+          notes?: string | null
+          payment_date?: string
+          professional_id?: string
+          reference_month?: number
+          reference_year?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_payments_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_payments_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

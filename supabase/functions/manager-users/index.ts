@@ -227,6 +227,113 @@ serve(async (req) => {
       });
     }
 
+    // GET: Pagamentos de um profissional
+    if (req.method === 'GET' && action === 'payments') {
+      const professionalId = url.searchParams.get('professionalId');
+
+      if (!professionalId) {
+        return new Response(JSON.stringify({ error: 'professionalId is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Buscar profile do gestor
+      const { data: managerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!managerProfile) {
+        throw new Error('Manager profile not found');
+      }
+
+      // Buscar pagamentos
+      const { data: payments, error: paymentsError } = await supabaseAdmin
+        .from('professional_payments')
+        .select('*')
+        .eq('professional_id', professionalId)
+        .eq('manager_id', managerProfile.id)
+        .order('payment_date', { ascending: false });
+
+      if (paymentsError) {
+        console.error('Error fetching payments:', paymentsError);
+        throw paymentsError;
+      }
+
+      console.log(`Found ${payments?.length || 0} payments for professional ${professionalId}`);
+      return new Response(JSON.stringify({ payments: payments || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // POST: Registrar pagamento
+    if (req.method === 'POST' && action === 'register-payment') {
+      const body = await req.json();
+      const { professionalId, amount, paymentDate, referenceMonth, referenceYear, notes } = body;
+
+      console.log('Registering payment:', { professionalId, amount, paymentDate, referenceMonth, referenceYear });
+
+      if (!professionalId || !amount || !paymentDate || !referenceMonth || !referenceYear) {
+        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Buscar profile do gestor
+      const { data: managerProfile, error: managerError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (managerError || !managerProfile) {
+        console.error('Error fetching manager profile:', managerError);
+        throw new Error('Manager profile not found');
+      }
+
+      // Verificar se o profissional está vinculado ao gestor
+      const { data: professionalProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id, manager_id')
+        .eq('id', professionalId)
+        .single();
+
+      if (!professionalProfile || professionalProfile.manager_id !== managerProfile.id) {
+        return new Response(JSON.stringify({ error: 'Professional not linked to this manager' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Inserir pagamento
+      const { data: payment, error: paymentError } = await supabaseAdmin
+        .from('professional_payments')
+        .insert({
+          professional_id: professionalId,
+          manager_id: managerProfile.id,
+          amount,
+          payment_date: paymentDate,
+          reference_month: referenceMonth,
+          reference_year: referenceYear,
+          notes
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error inserting payment:', paymentError);
+        throw paymentError;
+      }
+
+      console.log('Payment registered successfully:', payment.id);
+      return new Response(JSON.stringify({ success: true, payment }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // POST: Criar novo profissional
     if (req.method === 'POST' && action === 'create-professional') {
       const body = await req.json();
