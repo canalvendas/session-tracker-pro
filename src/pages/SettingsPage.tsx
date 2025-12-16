@@ -9,6 +9,7 @@ import { Calendar, Save, LogOut, Moon, Sun, Monitor, Shield } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ClinicManager } from "@/components/ClinicManager";
+import { ManagerProfessionalsSection } from "@/components/ManagerProfessionalsSection";
 import { Clinic, ClinicFormData } from "@/types/clinic";
 
 interface Settings {
@@ -37,22 +38,24 @@ export function SettingsPage({
 }: SettingsPageProps) {
   const [weekStartsOn, setWeekStartsOn] = useState<"0" | "1">(settings.weekStartsOn.toString() as "0" | "1");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAdminRole = async () => {
+    const checkRoles = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.rpc('has_role', { 
-          _user_id: user.id, 
-          _role: 'admin' 
-        });
-        setIsAdmin(data === true);
+        const [adminResult, managerResult] = await Promise.all([
+          supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
+          supabase.rpc('has_role', { _user_id: user.id, _role: 'manager' }),
+        ]);
+        setIsAdmin(adminResult.data === true);
+        setIsManager(managerResult.data === true);
       }
     };
-    checkAdminRole();
+    checkRoles();
   }, []);
 
   const handleSave = () => {
@@ -99,6 +102,9 @@ export function SettingsPage({
       </header>
 
       <main className="px-5 space-y-5">
+        {/* Manager Professionals Section - Only visible to managers */}
+        {isManager && <ManagerProfessionalsSection />}
+
         {/* Clinic Manager - Main feature now */}
         <ClinicManager
           clinics={clinics}
@@ -106,7 +112,6 @@ export function SettingsPage({
           onUpdate={onUpdateClinic}
           onDelete={onDeleteClinic}
         />
-
         {/* Week Start */}
         <Card variant="elevated">
           <div className="flex items-center gap-3 mb-4">
