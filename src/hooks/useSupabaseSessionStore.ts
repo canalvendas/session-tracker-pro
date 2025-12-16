@@ -64,44 +64,42 @@ export function useSupabaseSessionStore(user: User | null) {
 
     const fetchData = async () => {
       try {
-        // Fetch sessions
-        const { data: sessionsData, error: sessionsError } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('date', { ascending: false });
+        // Fetch all data in parallel for better performance
+        const [sessionsResult, clinicsResult, profileResult] = await Promise.all([
+          supabase
+            .from('sessions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false }),
+          supabase
+            .from('clinics')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('profiles')
+            .select('session_value, week_starts_on, full_name, is_paid, manager_id')
+            .eq('user_id', user.id)
+            .single(),
+        ]);
 
-        if (sessionsError) throw sessionsError;
-        setSessions(sessionsData || []);
+        if (sessionsResult.error) throw sessionsResult.error;
+        setSessions(sessionsResult.data || []);
 
-        // Fetch clinics
-        const { data: clinicsData, error: clinicsError } = await supabase
-          .from('clinics')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: true });
+        if (clinicsResult.error) throw clinicsResult.error;
+        setClinics(clinicsResult.data || []);
 
-        if (clinicsError) throw clinicsError;
-        setClinics(clinicsData || []);
-
-        // Fetch profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('session_value, week_starts_on, full_name, is_paid, manager_id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profileError && profileError.code !== 'PGRST116') {
-          throw profileError;
+        if (profileResult.error && profileResult.error.code !== 'PGRST116') {
+          throw profileResult.error;
         }
 
-        if (profileData) {
+        if (profileResult.data) {
           setProfile({
-            session_value: Number(profileData.session_value),
-            week_starts_on: profileData.week_starts_on as 0 | 1,
-            full_name: profileData.full_name,
-            is_paid: profileData.is_paid ?? false,
-            manager_id: profileData.manager_id ?? null,
+            session_value: Number(profileResult.data.session_value),
+            week_starts_on: profileResult.data.week_starts_on as 0 | 1,
+            full_name: profileResult.data.full_name,
+            is_paid: profileResult.data.is_paid ?? false,
+            manager_id: profileResult.data.manager_id ?? null,
           });
         }
       } catch (error) {

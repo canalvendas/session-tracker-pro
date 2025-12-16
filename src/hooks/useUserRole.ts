@@ -25,46 +25,27 @@ export function useUserRole(user: User | null): UserRoleState {
 
     const fetchRole = async () => {
       try {
-        // Check each role in order of priority
-        const { data: isAdmin } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'admin'
-        });
+        // Check all roles in parallel for better performance
+        const [adminResult, managerResult, professionalResult] = await Promise.all([
+          supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
+          supabase.rpc('has_role', { _user_id: user.id, _role: 'manager' }),
+          supabase.rpc('has_role', { _user_id: user.id, _role: 'professional' }),
+        ]);
 
-        if (isAdmin) {
+        // Determine role based on priority
+        if (adminResult.data) {
           setRole('admin');
-          setLoading(false);
-          return;
-        }
-
-        const { data: isManager } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'manager'
-        });
-
-        if (isManager) {
+        } else if (managerResult.data) {
           setRole('manager');
-          setLoading(false);
-          return;
-        }
-
-        const { data: isProfessional } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'professional'
-        });
-
-        if (isProfessional) {
+        } else if (professionalResult.data) {
           setRole('professional');
-          setLoading(false);
-          return;
+        } else {
+          setRole(null);
         }
-
-        // Default to professional if no role assigned but user is paid
-        setRole(null);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching user role:', error);
         setRole(null);
+      } finally {
         setLoading(false);
       }
     };
