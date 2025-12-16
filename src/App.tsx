@@ -110,7 +110,16 @@ function AppContent() {
           element={
             isManager && !isAdmin 
               ? <ManagerDashboard /> 
-              : <Dashboard stats={stats} therapistName={profile.full_name} userId={user.id} isLinkedProfessional={isLinkedProfessional} />
+              : <Dashboard 
+                  stats={stats} 
+                  therapistName={profile.full_name} 
+                  userId={user.id} 
+                  isLinkedProfessional={isLinkedProfessional}
+                  addSession={addSession}
+                  sessionValue={settings.sessionValue}
+                  clinics={clinics}
+                  defaultClinic={getDefaultClinic()}
+                />
           } 
         />
         <Route
