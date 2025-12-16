@@ -133,7 +133,7 @@ serve(async (req) => {
 
       let query = supabaseAdmin
         .from('sessions')
-        .select('id, date, count, session_value, clinic_id, created_at')
+        .select('id, date, count, session_value, clinic_id, created_at, clinics(id, name, color)')
         .eq('user_id', professionalUserId)
         .order('date', { ascending: false });
 

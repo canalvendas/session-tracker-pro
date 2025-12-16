@@ -22,6 +22,11 @@ interface Session {
   session_value: number | null;
   clinic_id: string | null;
   created_at: string;
+  clinics: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
 }
 
 interface Professional {
@@ -258,21 +263,63 @@ export function ManagerProfessionalDetail() {
                         sum + (s.count * (s.session_value || 0)), 0
                       );
                       
+                      // Group by clinic within the same day
+                      const sessionsByClinic = daySessions.reduce((acc, session) => {
+                        const clinicKey = session.clinics?.id || 'no-clinic';
+                        if (!acc[clinicKey]) {
+                          acc[clinicKey] = {
+                            clinic: session.clinics,
+                            sessions: [],
+                            totalCount: 0,
+                            totalValue: 0
+                          };
+                        }
+                        acc[clinicKey].sessions.push(session);
+                        acc[clinicKey].totalCount += session.count;
+                        acc[clinicKey].totalValue += session.count * (session.session_value || 0);
+                        return acc;
+                      }, {} as Record<string, { clinic: Session['clinics']; sessions: Session[]; totalCount: number; totalValue: number }>);
+
+                      const clinicGroups = Object.values(sessionsByClinic);
+                      const hasMultipleClinics = clinicGroups.length > 1;
+                      
                       return (
                         <div key={date} className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-foreground">
-                                {format(new Date(date + 'T12:00:00'), "EEEE, d 'de' MMMM", { locale: ptBR })}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {dayTotal} {dayTotal === 1 ? 'sessão' : 'sessões'}
-                              </p>
-                            </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium text-foreground">
+                              {format(new Date(date + 'T12:00:00'), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                            </p>
                             <span className="font-semibold text-primary">
                               {formatCurrency(dayValue)}
                             </span>
                           </div>
+                          
+                          {clinicGroups.map((group, idx) => (
+                            <div 
+                              key={group.clinic?.id || `no-clinic-${idx}`} 
+                              className={`flex items-center justify-between text-sm ${hasMultipleClinics ? 'ml-4 py-1' : ''}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                {group.clinic && (
+                                  <span 
+                                    className="w-2 h-2 rounded-full" 
+                                    style={{ backgroundColor: group.clinic.color }}
+                                  />
+                                )}
+                                <span className="text-muted-foreground">
+                                  {group.totalCount} {group.totalCount === 1 ? 'sessão' : 'sessões'}
+                                  {group.clinic && (
+                                    <span className="ml-1">• {group.clinic.name}</span>
+                                  )}
+                                </span>
+                              </div>
+                              {hasMultipleClinics && (
+                                <span className="text-muted-foreground">
+                                  {formatCurrency(group.totalValue)}
+                                </span>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       );
                     })}
