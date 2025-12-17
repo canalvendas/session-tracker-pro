@@ -408,17 +408,28 @@ export function AddSessionSheet({
               <label className="text-sm font-medium text-muted-foreground">
                 Quantidade de sessões
               </label>
-              <div className="flex items-center justify-center gap-6 py-4">
+              <div className="flex items-center justify-center gap-6 py-4 px-6 bg-muted/30 rounded-2xl border border-border/50">
                 <Button
                   variant="outline"
                   size="icon-lg"
                   onClick={() => setCount(Math.max(1, count - 1))}
                   disabled={count <= 1}
+                  className={cn(
+                    "transition-all duration-200 ease-out",
+                    "hover:scale-110 active:scale-90",
+                    "hover:shadow-lg hover:shadow-primary/25",
+                    "hover:border-primary hover:bg-primary/10",
+                    "hover:ring-2 hover:ring-primary/30",
+                    "disabled:hover:scale-100 disabled:hover:shadow-none disabled:hover:ring-0"
+                  )}
                 >
-                  <Minus className="h-6 w-6" />
+                  <Minus className="h-6 w-6 transition-transform duration-200" />
                 </Button>
                 <div className="text-center min-w-[100px]">
-                  <span className="text-5xl font-bold text-foreground tabular-nums">
+                  <span 
+                    key={count}
+                    className="text-5xl font-bold text-foreground tabular-nums inline-block animate-number-bounce"
+                  >
                     {count}
                   </span>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -429,8 +440,15 @@ export function AddSessionSheet({
                   variant="outline"
                   size="icon-lg"
                   onClick={() => setCount(count + 1)}
+                  className={cn(
+                    "transition-all duration-200 ease-out",
+                    "hover:scale-110 active:scale-90",
+                    "hover:shadow-lg hover:shadow-primary/25",
+                    "hover:border-primary hover:bg-primary/10",
+                    "hover:ring-2 hover:ring-primary/30"
+                  )}
                 >
-                  <Plus className="h-6 w-6" />
+                  <Plus className="h-6 w-6 transition-transform duration-200" />
                 </Button>
               </div>
             </div>
