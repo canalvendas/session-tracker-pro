@@ -21,7 +21,9 @@ export type Database = {
           id: string
           is_default: boolean
           name: string
+          payment_type: string
           session_value: number
+          shift_value: number
           updated_at: string | null
           user_id: string
         }
@@ -31,7 +33,9 @@ export type Database = {
           id?: string
           is_default?: boolean
           name: string
+          payment_type?: string
           session_value?: number
+          shift_value?: number
           updated_at?: string | null
           user_id: string
         }
@@ -41,7 +45,9 @@ export type Database = {
           id?: string
           is_default?: boolean
           name?: string
+          payment_type?: string
           session_value?: number
+          shift_value?: number
           updated_at?: string | null
           user_id?: string
         }
@@ -152,6 +158,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          payment_type: string | null
           session_value: number | null
           user_id: string
         }
@@ -161,6 +168,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          payment_type?: string | null
           session_value?: number | null
           user_id: string
         }
@@ -170,6 +178,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          payment_type?: string | null
           session_value?: number | null
           user_id?: string
         }

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Plus, Pencil, Trash2, Star } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Star, Clock, Stethoscope } from "lucide-react";
 import { Clinic, ClinicFormData } from "@/types/clinic";
 import { ClinicForm } from "./ClinicForm";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,16 +112,26 @@ export function ClinicManager({ clinics, onAdd, onUpdate, onDelete }: ClinicMana
                 style={{ backgroundColor: clinic.color }}
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-foreground truncate">
                     {clinic.name}
                   </span>
                   {clinic.is_default && (
                     <Star className="h-3 w-3 text-amber-500 shrink-0" fill="currentColor" />
                   )}
+                  <Badge variant={clinic.payment_type === 'shift' ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
+                    {clinic.payment_type === 'shift' ? (
+                      <><Clock className="h-2.5 w-2.5 mr-0.5" /> Turno</>
+                    ) : (
+                      <><Stethoscope className="h-2.5 w-2.5 mr-0.5" /> Sessão</>
+                    )}
+                  </Badge>
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  {formatCurrency(clinic.session_value)}
+                  {clinic.payment_type === 'shift' 
+                    ? `${formatCurrency(clinic.shift_value)}/turno`
+                    : `${formatCurrency(clinic.session_value)}/sessão`
+                  }
                 </span>
               </div>
               <div className="flex gap-1 shrink-0">

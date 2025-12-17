@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Minus, Plus } from "lucide-react";
+import { CalendarIcon, Minus, Plus, Clock, Stethoscope } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Clinic } from "@/types/clinic";
 
@@ -45,7 +45,12 @@ export function AddSessionSheet({
   }, [open, defaultClinic]);
 
   const selectedClinic = clinics.find(c => c.id === selectedClinicId);
-  const currentSessionValue = selectedClinic?.session_value ?? sessionValue;
+  const isShiftPayment = selectedClinic?.payment_type === 'shift';
+  
+  // For shift payment, value is fixed; for session payment, multiply by count
+  const currentValue = isShiftPayment 
+    ? (selectedClinic?.shift_value ?? 0)
+    : (selectedClinic?.session_value ?? sessionValue) * count;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -60,16 +65,20 @@ export function AddSessionSheet({
       const result = await onAddSession(selectedDate, count, selectedClinicId);
       if (result) {
         const clinicName = selectedClinic?.name ? ` (${selectedClinic.name})` : '';
+        const message = isShiftPayment
+          ? `1 turno registrado com ${count} ${count === 1 ? 'sessão' : 'sessões'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}${clinicName}`
+          : `${count} ${count === 1 ? 'sessão adicionada' : 'sessões adicionadas'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}${clinicName}`;
+        
         toast({
-          title: "Sessão registrada!",
-          description: `${count} ${count === 1 ? 'sessão adicionada' : 'sessões adicionadas'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}${clinicName}`,
+          title: isShiftPayment ? "Turno registrado!" : "Sessão registrada!",
+          description: message,
         });
         setCount(1);
         onOpenChange(false);
       } else {
         toast({
           title: "Erro ao registrar",
-          description: "Não foi possível salvar a sessão. Tente novamente.",
+          description: "Não foi possível salvar. Tente novamente.",
           variant: "destructive",
         });
       }
@@ -84,15 +93,18 @@ export function AddSessionSheet({
       const result = await onAddSession(new Date(), 1, defaultClinic?.id);
       if (result) {
         const clinicName = defaultClinic?.name ? ` (${defaultClinic.name})` : '';
+        const isDefaultShift = defaultClinic?.payment_type === 'shift';
         toast({
-          title: "Sessão registrada!",
-          description: `1 sessão adicionada para hoje${clinicName}`,
+          title: isDefaultShift ? "Turno registrado!" : "Sessão registrada!",
+          description: isDefaultShift 
+            ? `1 turno registrado para hoje${clinicName}`
+            : `1 sessão adicionada para hoje${clinicName}`,
         });
         onOpenChange(false);
       } else {
         toast({
           title: "Erro ao registrar",
-          description: "Não foi possível salvar a sessão. Tente novamente.",
+          description: "Não foi possível salvar. Tente novamente.",
           variant: "destructive",
         });
       }
@@ -101,11 +113,20 @@ export function AddSessionSheet({
     }
   };
 
+  const getClinicDisplayValue = (clinic: Clinic) => {
+    if (clinic.payment_type === 'shift') {
+      return `${formatCurrency(clinic.shift_value)}/turno`;
+    }
+    return `${formatCurrency(clinic.session_value)}/sessão`;
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-10">
         <SheetHeader className="mb-6">
-          <SheetTitle className="text-xl">Registrar Sessões</SheetTitle>
+          <SheetTitle className="text-xl">
+            {isShiftPayment ? "Registrar Turno" : "Registrar Sessões"}
+          </SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6">
@@ -119,10 +140,15 @@ export function AddSessionSheet({
           >
             {isSubmitting ? (
               <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            ) : defaultClinic?.payment_type === 'shift' ? (
+              <Clock className="h-5 w-5 mr-2" />
             ) : (
               <Plus className="h-5 w-5 mr-2" />
             )}
-            Adicionar 1 sessão agora
+            {defaultClinic?.payment_type === 'shift' 
+              ? "Adicionar 1 turno agora"
+              : "Adicionar 1 sessão agora"
+            }
             {defaultClinic && (
               <span className="ml-1 opacity-75">({defaultClinic.name})</span>
             )}
@@ -155,8 +181,8 @@ export function AddSessionSheet({
                           style={{ backgroundColor: selectedClinic.color }}
                         />
                         <span>{selectedClinic.name}</span>
-                        <span className="text-muted-foreground">
-                          ({formatCurrency(selectedClinic.session_value)})
+                        <span className="text-muted-foreground text-xs">
+                          {getClinicDisplayValue(selectedClinic)}
                         </span>
                       </div>
                     )}
@@ -171,8 +197,15 @@ export function AddSessionSheet({
                           style={{ backgroundColor: clinic.color }}
                         />
                         <span>{clinic.name}</span>
-                        <span className="text-muted-foreground">
-                          ({formatCurrency(clinic.session_value)})
+                        <span className="text-muted-foreground text-xs ml-1">
+                          {clinic.payment_type === 'shift' ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {getClinicDisplayValue(clinic)}
+                            </span>
+                          ) : (
+                            getClinicDisplayValue(clinic)
+                          )}
                         </span>
                       </div>
                     </SelectItem>
@@ -191,7 +224,8 @@ export function AddSessionSheet({
               />
               <span className="text-sm font-medium">{clinics[0].name}</span>
               <span className="text-sm text-muted-foreground">
-                ({formatCurrency(clinics[0].session_value)})
+                {clinics[0].payment_type === 'shift' && <Clock className="h-3 w-3 inline mr-1" />}
+                {getClinicDisplayValue(clinics[0])}
               </span>
             </div>
           )}
@@ -246,11 +280,18 @@ export function AddSessionSheet({
             </Popover>
           </div>
 
-          {/* Count Selector */}
+          {/* Count Selector - Different UI for shift vs session */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">
-              Quantidade de sessões
+              {isShiftPayment ? "Sessões realizadas no turno" : "Quantidade de sessões"}
             </label>
+            
+            {isShiftPayment && (
+              <p className="text-xs text-muted-foreground">
+                O valor do turno é fixo. Informe quantas sessões você realizou (opcional, para controle)
+              </p>
+            )}
+            
             <div className="flex items-center justify-center gap-6 py-4">
               <Button
                 variant="outline"
@@ -279,11 +320,28 @@ export function AddSessionSheet({
           </div>
 
           {/* Value Preview */}
-          <div className="bg-secondary rounded-xl p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Valor total</p>
-            <p className="text-2xl font-bold text-foreground">
-              {formatCurrency(count * currentSessionValue)}
-            </p>
+          <div className={cn(
+            "rounded-xl p-4 text-center",
+            isShiftPayment ? "bg-primary/10 border border-primary/20" : "bg-secondary"
+          )}>
+            {isShiftPayment ? (
+              <>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <p className="text-sm text-muted-foreground">Valor do turno (fixo)</p>
+                </div>
+                <p className="text-2xl font-bold text-foreground">
+                  {formatCurrency(currentValue)}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground mb-1">Valor total</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {formatCurrency(currentValue)}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -293,7 +351,10 @@ export function AddSessionSheet({
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Salvando..." : `Registrar ${count} ${count === 1 ? 'sessão' : 'sessões'}`}
+            {isSubmitting ? "Salvando..." : isShiftPayment 
+              ? `Registrar turno (${count} ${count === 1 ? 'sessão' : 'sessões'})`
+              : `Registrar ${count} ${count === 1 ? 'sessão' : 'sessões'}`
+            }
           </Button>
         </div>
       </SheetContent>

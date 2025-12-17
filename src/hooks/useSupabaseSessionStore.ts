@@ -19,6 +19,7 @@ interface Session {
   created_at: string;
   clinic_id: string | null;
   session_value: number | null;
+  payment_type: 'session' | 'shift' | null;
 }
 
 interface Profile {
@@ -84,10 +85,10 @@ export function useSupabaseSessionStore(user: User | null) {
         ]);
 
         if (sessionsResult.error) throw sessionsResult.error;
-        setSessions(sessionsResult.data || []);
+        setSessions((sessionsResult.data || []) as Session[]);
 
         if (clinicsResult.error) throw clinicsResult.error;
-        setClinics(clinicsResult.data || []);
+        setClinics((clinicsResult.data || []) as Clinic[]);
 
         if (profileResult.error && profileResult.error.code !== 'PGRST116') {
           throw profileResult.error;
@@ -119,8 +120,35 @@ export function useSupabaseSessionStore(user: User | null) {
     return defaultClinic || clinics[0];
   }, [clinics]);
 
-  // Get session value for calculation (use session's stored value or clinic value or profile default)
+  // Get total value for a session (considering payment type)
+  const getSessionTotalValue = useCallback((session: Session): number => {
+    // For shift payment, the stored session_value IS the total value (not per-session)
+    if (session.payment_type === 'shift') {
+      return session.session_value ?? 0;
+    }
+    
+    // For session payment, multiply count by per-session value
+    if (session.session_value != null) {
+      return session.count * session.session_value;
+    }
+    if (session.clinic_id) {
+      const clinic = clinics.find(c => c.id === session.clinic_id);
+      if (clinic) {
+        if (clinic.payment_type === 'shift') {
+          return clinic.shift_value;
+        }
+        return session.count * clinic.session_value;
+      }
+    }
+    return session.count * profile.session_value;
+  }, [clinics, profile.session_value]);
+
+  // Get per-session value (for backward compatibility)
   const getSessionValue = useCallback((session: Session): number => {
+    if (session.payment_type === 'shift') {
+      // For shift, return the total value divided by count to get "per session" equivalent
+      return (session.session_value ?? 0) / (session.count || 1);
+    }
     if (session.session_value != null) {
       return session.session_value;
     }
@@ -149,6 +177,8 @@ export function useSupabaseSessionStore(user: User | null) {
         user_id: user.id,
         name: data.name,
         session_value: data.session_value,
+        shift_value: data.shift_value,
+        payment_type: data.payment_type,
         color: data.color,
         is_default: data.is_default || clinics.length === 0,
       })
@@ -160,13 +190,14 @@ export function useSupabaseSessionStore(user: User | null) {
       return null;
     }
 
+    const typedClinic = newClinic as Clinic;
     setClinics(prev => {
-      if (newClinic.is_default) {
-        return [...prev.map(c => ({ ...c, is_default: false })), newClinic];
+      if (typedClinic.is_default) {
+        return [...prev.map(c => ({ ...c, is_default: false })), typedClinic];
       }
-      return [...prev, newClinic];
+      return [...prev, typedClinic];
     });
-    return newClinic;
+    return typedClinic;
   }, [user, clinics]);
 
   const updateClinic = useCallback(async (id: string, data: ClinicFormData) => {
@@ -186,6 +217,8 @@ export function useSupabaseSessionStore(user: User | null) {
       .update({
         name: data.name,
         session_value: data.session_value,
+        shift_value: data.shift_value,
+        payment_type: data.payment_type,
         color: data.color,
         is_default: data.is_default,
       })
@@ -199,11 +232,12 @@ export function useSupabaseSessionStore(user: User | null) {
       return;
     }
 
+    const typedUpdatedClinic = updatedClinic as Clinic;
     setClinics(prev => {
       if (data.is_default) {
-        return prev.map(c => c.id === id ? updatedClinic : { ...c, is_default: false });
+        return prev.map(c => c.id === id ? typedUpdatedClinic : { ...c, is_default: false });
       }
-      return prev.map(c => c.id === id ? updatedClinic : c);
+      return prev.map(c => c.id === id ? typedUpdatedClinic : c);
     });
   }, [user]);
 
@@ -251,7 +285,12 @@ export function useSupabaseSessionStore(user: User | null) {
       clinic = getDefaultClinic();
     }
 
-    const sessionValue = clinic?.session_value ?? profile.session_value;
+    // Determine payment type and value based on clinic
+    const paymentType = clinic?.payment_type ?? 'session';
+    // For shift payment, store the total shift value; for session, store per-session value
+    const sessionValue = paymentType === 'shift' 
+      ? (clinic?.shift_value ?? 0)
+      : (clinic?.session_value ?? profile.session_value);
     
     const { data, error } = await supabase
       .from('sessions')
@@ -261,6 +300,7 @@ export function useSupabaseSessionStore(user: User | null) {
         count,
         clinic_id: clinic?.id || null,
         session_value: sessionValue,
+        payment_type: paymentType,
       })
       .select()
       .single();
@@ -270,8 +310,8 @@ export function useSupabaseSessionStore(user: User | null) {
       return null;
     }
 
-    setSessions(prev => [data, ...prev]);
-    return data;
+    setSessions(prev => [data as Session, ...prev]);
+    return data as Session;
   }, [user, clinics, getDefaultClinic, profile.session_value]);
 
   const deleteSession = useCallback(async (id: string) => {
@@ -315,7 +355,7 @@ export function useSupabaseSessionStore(user: User | null) {
       return;
     }
 
-    setSessions(prev => prev.map(s => s.id === id ? data : s));
+    setSessions(prev => prev.map(s => s.id === id ? data as Session : s));
   }, [user, clinics, profile.session_value]);
 
   const getSessionsForDate = useCallback((date: Date): Session[] => {
@@ -343,8 +383,7 @@ export function useSupabaseSessionStore(user: User | null) {
 
     sessions.forEach(session => {
       const sessionDate = parseISO(session.date);
-      const sessionVal = getSessionValue(session);
-      const totalValue = session.count * sessionVal;
+      const totalValue = getSessionTotalValue(session);
       
       if (session.date === today) {
         dailySessions += session.count;
@@ -367,7 +406,7 @@ export function useSupabaseSessionStore(user: User | null) {
       weekly: { sessions: weeklySessions, value: weeklyValue },
       monthly: { sessions: monthlySessions, value: monthlyValue },
     };
-  }, [sessions, profile, getSessionValue]);
+  }, [sessions, profile, getSessionTotalValue]);
 
   const getMonthlyHistory = useCallback((year: number, month: number): DayRecord[] => {
     const startDate = new Date(year, month, 1);
@@ -382,7 +421,7 @@ export function useSupabaseSessionStore(user: User | null) {
           dailyTotals[session.date] = { sessions: 0, value: 0 };
         }
         dailyTotals[session.date].sessions += session.count;
-        dailyTotals[session.date].value += session.count * getSessionValue(session);
+        dailyTotals[session.date].value += getSessionTotalValue(session);
       }
     });
 
@@ -393,7 +432,7 @@ export function useSupabaseSessionStore(user: User | null) {
         value: data.value,
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [sessions, getSessionValue]);
+  }, [sessions, getSessionTotalValue]);
 
   const getWeeklyHistory = useCallback((year: number, month: number) => {
     const monthStart = new Date(year, month, 1);
@@ -411,7 +450,7 @@ export function useSupabaseSessionStore(user: User | null) {
         const sessionDate = parseISO(session.date);
         if (isWithinInterval(sessionDate, { start: currentWeekStart, end: currentWeekEnd })) {
           weekSessions += session.count;
-          weekValue += session.count * getSessionValue(session);
+          weekValue += getSessionTotalValue(session);
         }
       });
       
@@ -429,7 +468,7 @@ export function useSupabaseSessionStore(user: User | null) {
     }
     
     return weeks;
-  }, [sessions, profile, getSessionValue]);
+  }, [sessions, profile, getSessionTotalValue]);
 
   const getYearlyHistory = useCallback((year: number) => {
     const monthlyTotals: { month: number; sessions: number; value: number }[] = [];
@@ -444,7 +483,7 @@ export function useSupabaseSessionStore(user: User | null) {
         const sessionDate = parseISO(session.date);
         if (isWithinInterval(sessionDate, { start: monthStart, end: monthEnd })) {
           monthSessions += session.count;
-          monthValue += session.count * getSessionValue(session);
+          monthValue += getSessionTotalValue(session);
         }
       });
       
@@ -456,7 +495,7 @@ export function useSupabaseSessionStore(user: User | null) {
     }
     
     return monthlyTotals;
-  }, [sessions, getSessionValue]);
+  }, [sessions, getSessionTotalValue]);
 
   const updateSettings = useCallback(async (newSettings: Partial<Profile>) => {
     if (!user) return;
@@ -498,8 +537,7 @@ export function useSupabaseSessionStore(user: User | null) {
     sessions.forEach(session => {
       const sessionDate = parseISO(session.date);
       if (isWithinInterval(sessionDate, { start: startDate, end: endDate })) {
-        const sessionVal = getSessionValue(session);
-        const totalValue = session.count * sessionVal;
+        const totalValue = getSessionTotalValue(session);
         
         if (session.clinic_id) {
           if (!clinicTotals[session.clinic_id]) {
@@ -533,7 +571,7 @@ export function useSupabaseSessionStore(user: User | null) {
     result.sort((a, b) => b.value - a.value);
     
     return result;
-  }, [sessions, clinics, getSessionValue]);
+  }, [sessions, clinics, getSessionTotalValue]);
 
   return {
     sessions,
