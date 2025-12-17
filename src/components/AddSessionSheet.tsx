@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Minus, Plus, Clock, Stethoscope, Sun, Moon, SunMoon } from "lucide-react";
+import { CalendarIcon, Minus, Plus, Clock, Stethoscope, Sun, Moon, SunMoon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Clinic, ShiftPeriod } from "@/types/clinic";
 
@@ -307,18 +307,25 @@ export function AddSessionSheet({
                   type="button"
                   onClick={() => setSelectedShiftPeriod('morning')}
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                    "relative flex flex-col items-center justify-center p-4 rounded-xl border-2",
+                    "transition-all duration-300 ease-out",
+                    "hover:scale-[1.02] active:scale-[0.98]",
                     selectedShiftPeriod === 'morning'
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-muted/30 hover:bg-muted/50"
+                      ? "border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-amber-500/25 ring-2 ring-amber-500/30 animate-pulse-glow"
+                      : "border-border bg-muted/30 hover:bg-muted/50 hover:border-muted-foreground/30"
                   )}
                 >
+                  {selectedShiftPeriod === 'morning' && (
+                    <div className="absolute -top-2 -right-2 bg-primary rounded-full p-1 animate-scale-in shadow-md">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  )}
                   <Sun className={cn(
-                    "h-7 w-7 mb-2",
-                    selectedShiftPeriod === 'morning' ? "text-primary" : "text-amber-500"
+                    "h-7 w-7 mb-2 transition-all duration-300",
+                    selectedShiftPeriod === 'morning' ? "text-amber-500 animate-icon-pop" : "text-amber-500/70"
                   )} />
                   <span className={cn(
-                    "text-sm font-medium",
+                    "text-sm font-medium transition-colors duration-300",
                     selectedShiftPeriod === 'morning' ? "text-primary" : "text-foreground"
                   )}>
                     Manhã
@@ -333,18 +340,25 @@ export function AddSessionSheet({
                   type="button"
                   onClick={() => setSelectedShiftPeriod('afternoon')}
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                    "relative flex flex-col items-center justify-center p-4 rounded-xl border-2",
+                    "transition-all duration-300 ease-out",
+                    "hover:scale-[1.02] active:scale-[0.98]",
                     selectedShiftPeriod === 'afternoon'
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-muted/30 hover:bg-muted/50"
+                      ? "border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-blue-500/25 ring-2 ring-blue-500/30 animate-pulse-glow"
+                      : "border-border bg-muted/30 hover:bg-muted/50 hover:border-muted-foreground/30"
                   )}
                 >
+                  {selectedShiftPeriod === 'afternoon' && (
+                    <div className="absolute -top-2 -right-2 bg-primary rounded-full p-1 animate-scale-in shadow-md">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  )}
                   <Moon className={cn(
-                    "h-7 w-7 mb-2",
-                    selectedShiftPeriod === 'afternoon' ? "text-primary" : "text-blue-500"
+                    "h-7 w-7 mb-2 transition-all duration-300",
+                    selectedShiftPeriod === 'afternoon' ? "text-blue-500 animate-icon-pop" : "text-blue-500/70"
                   )} />
                   <span className={cn(
-                    "text-sm font-medium",
+                    "text-sm font-medium transition-colors duration-300",
                     selectedShiftPeriod === 'afternoon' ? "text-primary" : "text-foreground"
                   )}>
                     Tarde
@@ -359,18 +373,25 @@ export function AddSessionSheet({
                   type="button"
                   onClick={() => setSelectedShiftPeriod('full_day')}
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                    "relative flex flex-col items-center justify-center p-4 rounded-xl border-2",
+                    "transition-all duration-300 ease-out",
+                    "hover:scale-[1.02] active:scale-[0.98]",
                     selectedShiftPeriod === 'full_day'
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-muted/30 hover:bg-muted/50"
+                      ? "border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-purple-500/25 ring-2 ring-purple-500/30 animate-pulse-glow"
+                      : "border-border bg-muted/30 hover:bg-muted/50 hover:border-muted-foreground/30"
                   )}
                 >
+                  {selectedShiftPeriod === 'full_day' && (
+                    <div className="absolute -top-2 -right-2 bg-primary rounded-full p-1 animate-scale-in shadow-md">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  )}
                   <SunMoon className={cn(
-                    "h-7 w-7 mb-2",
-                    selectedShiftPeriod === 'full_day' ? "text-primary" : "text-purple-500"
+                    "h-7 w-7 mb-2 transition-all duration-300",
+                    selectedShiftPeriod === 'full_day' ? "text-purple-500 animate-icon-pop" : "text-purple-500/70"
                   )} />
                   <span className={cn(
-                    "text-sm font-medium",
+                    "text-sm font-medium transition-colors duration-300",
                     selectedShiftPeriod === 'full_day' ? "text-primary" : "text-foreground"
                   )}>
                     Integral
