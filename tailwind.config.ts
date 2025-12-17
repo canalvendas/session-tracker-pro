@@ -85,6 +85,11 @@ export default {
           "0%": { transform: "translateY(100%)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
+        "number-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "30%": { transform: "scale(1.2)" },
+          "60%": { transform: "scale(0.95)" },
+        },
         "scale-in": {
           "0%": { transform: "scale(0)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
@@ -103,6 +108,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "number-increment": "number-increment 0.3s ease-out",
+        "number-bounce": "number-bounce 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "icon-pop": "icon-pop 0.3s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
