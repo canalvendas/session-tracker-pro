@@ -5,9 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SessionCalendar } from "@/components/SessionCalendar";
-import { Plus, Trash2, Clock, Users } from "lucide-react";
+import { Plus, Trash2, Clock, Users, Sun, Moon, SunMoon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Clinic } from "@/types/clinic";
+import { Clinic, ShiftPeriod } from "@/types/clinic";
 
 interface SessionRecord {
   id: string;
@@ -17,6 +17,7 @@ interface SessionRecord {
   clinic_id: string | null;
   session_value: number | null;
   payment_type?: 'session' | 'shift' | null;
+  shift_period?: ShiftPeriod | null;
 }
 
 interface CalendarPageProps {
@@ -25,7 +26,7 @@ interface CalendarPageProps {
   hasMixedOnDate: (date: Date) => boolean;
   getSessionsForDate: (date: Date) => SessionRecord[];
   getTotalForDate: (date: Date) => number;
-  addSession: (date: Date, count: number) => void;
+  addSession: (date: Date, count: number, clinicId?: string, shiftPeriod?: ShiftPeriod) => void;
   deleteSession: (id: string) => void;
   sessionValue: number;
   clinics: Clinic[];
@@ -64,6 +65,24 @@ export function CalendarPage({
   const getSessionClinic = (session: SessionRecord): Clinic | undefined => {
     if (!session.clinic_id) return undefined;
     return getClinicById(session.clinic_id);
+  };
+
+  const getShiftPeriodLabel = (period: ShiftPeriod | null | undefined): string => {
+    switch (period) {
+      case 'morning': return 'Manhã';
+      case 'afternoon': return 'Tarde';
+      case 'full_day': return 'Dia inteiro';
+      default: return 'Turno';
+    }
+  };
+
+  const getShiftPeriodIcon = (period: ShiftPeriod | null | undefined) => {
+    switch (period) {
+      case 'morning': return <Sun className="h-2.5 w-2.5 mr-0.5" />;
+      case 'afternoon': return <Moon className="h-2.5 w-2.5 mr-0.5" />;
+      case 'full_day': return <SunMoon className="h-2.5 w-2.5 mr-0.5" />;
+      default: return <Clock className="h-2.5 w-2.5 mr-0.5" />;
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -198,15 +217,15 @@ export function CalendarPage({
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium text-foreground">
                               {session.payment_type === 'shift' 
-                                ? `${session.count} ${session.count === 1 ? 'turno' : 'turnos'}`
+                                ? getShiftPeriodLabel(session.shift_period)
                                 : `${session.count} ${session.count === 1 ? 'sessão' : 'sessões'}`
                               }
                             </p>
                             {/* Payment type badge */}
                             {session.payment_type === 'shift' ? (
                               <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] px-1.5 py-0">
-                                <Clock className="h-2.5 w-2.5 mr-0.5" />
-                                Turno
+                                {getShiftPeriodIcon(session.shift_period)}
+                                {session.shift_period === 'full_day' ? 'Integral' : 'Turno'}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">

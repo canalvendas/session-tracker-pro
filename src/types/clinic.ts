@@ -1,4 +1,5 @@
 export type PaymentType = 'session' | 'shift';
+export type ShiftPeriod = 'morning' | 'afternoon' | 'full_day';
 
 export interface Clinic {
   id: string;

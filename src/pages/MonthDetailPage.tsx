@@ -29,10 +29,11 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, CalendarDays } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, CalendarDays, Sun, Moon, SunMoon, Clock, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DayRecord } from "@/types/session";
-import { Clinic } from "@/types/clinic";
+import { Clinic, ShiftPeriod } from "@/types/clinic";
+import { Badge } from "@/components/ui/badge";
 
 interface Session {
   id: string;
@@ -41,6 +42,8 @@ interface Session {
   created_at: string;
   clinic_id: string | null;
   session_value: number | null;
+  payment_type?: 'session' | 'shift' | null;
+  shift_period?: ShiftPeriod | null;
 }
 
 interface MonthDetailPageProps {
@@ -88,6 +91,24 @@ export function MonthDetailPage({
       style: 'currency',
       currency: 'BRL',
     }).format(amount);
+  };
+
+  const getShiftPeriodLabel = (period: ShiftPeriod | null | undefined): string => {
+    switch (period) {
+      case 'morning': return 'Manhã';
+      case 'afternoon': return 'Tarde';
+      case 'full_day': return 'Dia inteiro';
+      default: return 'Turno';
+    }
+  };
+
+  const getShiftPeriodIcon = (period: ShiftPeriod | null | undefined) => {
+    switch (period) {
+      case 'morning': return <Sun className="h-3 w-3" />;
+      case 'afternoon': return <Moon className="h-3 w-3" />;
+      case 'full_day': return <SunMoon className="h-3 w-3" />;
+      default: return <Clock className="h-3 w-3" />;
+    }
   };
 
   const totalMonthSessions = monthlyHistory.reduce((sum, day) => sum + day.sessions, 0);
@@ -207,6 +228,8 @@ export function MonthDetailPage({
                         {sessionsForDay.map((session, index) => {
                           const clinic = session.clinic_id ? getClinicById(session.clinic_id) : undefined;
                           const sessionVal = session.session_value ?? sessionValue;
+                          const isShift = session.payment_type === 'shift';
+                          const displayValue = isShift ? sessionVal : session.count * sessionVal;
                           
                           return (
                             <div
@@ -221,10 +244,25 @@ export function MonthDetailPage({
                                   />
                                 )}
                                 <div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <p className="text-sm font-medium text-foreground">
-                                      Registro {index + 1}
+                                      {isShift 
+                                        ? getShiftPeriodLabel(session.shift_period)
+                                        : `${session.count} ${session.count === 1 ? 'sessão' : 'sessões'}`
+                                      }
                                     </p>
+                                    {/* Payment type badge */}
+                                    {isShift ? (
+                                      <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] px-1.5 py-0">
+                                        {getShiftPeriodIcon(session.shift_period)}
+                                        <span className="ml-0.5">{session.shift_period === 'full_day' ? 'Integral' : 'Turno'}</span>
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">
+                                        <Users className="h-2.5 w-2.5 mr-0.5" />
+                                        Sessão
+                                      </Badge>
+                                    )}
                                     {clinic && (
                                       <span 
                                         className="text-xs px-1.5 py-0.5 rounded"
@@ -238,7 +276,7 @@ export function MonthDetailPage({
                                     )}
                                   </div>
                                   <p className="text-xs text-muted-foreground">
-                                    {session.count} {session.count === 1 ? 'sessão' : 'sessões'} • {formatCurrency(session.count * sessionVal)}
+                                    {formatCurrency(displayValue)}
                                   </p>
                                 </div>
                               </div>
