@@ -10,7 +10,7 @@ import { PremiumStatCard } from "@/components/PremiumStatCard";
 import { AddSessionSheet } from "@/components/AddSessionSheet";
 import { IndependenceBanner } from "@/components/IndependenceBanner";
 import { supabase } from "@/integrations/supabase/client";
-import { Clinic } from "@/types/clinic";
+import { Clinic, ShiftPeriod } from "@/types/clinic";
 
 interface DashboardProps {
   stats: {
@@ -22,7 +22,7 @@ interface DashboardProps {
   userId?: string;
   isLinkedProfessional?: boolean;
   // Props for AddSessionSheet
-  addSession?: (date: Date, count: number, clinicId?: string) => Promise<any>;
+  addSession?: (date: Date, count: number, clinicId?: string, shiftPeriod?: ShiftPeriod) => Promise<any>;
   sessionValue?: number;
   clinics?: Clinic[];
   defaultClinic?: Clinic | null;

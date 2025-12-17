@@ -10,7 +10,7 @@ import {
   isWithinInterval,
   parseISO,
 } from 'date-fns';
-import { Clinic, ClinicFormData } from '@/types/clinic';
+import { Clinic, ClinicFormData, ShiftPeriod } from '@/types/clinic';
 
 interface Session {
   id: string;
@@ -20,6 +20,7 @@ interface Session {
   clinic_id: string | null;
   session_value: number | null;
   payment_type: 'session' | 'shift' | null;
+  shift_period: ShiftPeriod | null;
 }
 
 interface Profile {
@@ -272,7 +273,7 @@ export function useSupabaseSessionStore(user: User | null) {
   }, [user]);
 
   // Session management with clinic support
-  const addSession = useCallback(async (date: Date, count: number = 1, clinicId?: string) => {
+  const addSession = useCallback(async (date: Date, count: number = 1, clinicId?: string, shiftPeriod?: ShiftPeriod) => {
     if (!user) return null;
 
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -287,20 +288,34 @@ export function useSupabaseSessionStore(user: User | null) {
 
     // Determine payment type and value based on clinic
     const paymentType = clinic?.payment_type ?? 'session';
-    // For shift payment, store the total shift value; for session, store per-session value
-    const sessionValue = paymentType === 'shift' 
-      ? (clinic?.shift_value ?? 0)
-      : (clinic?.session_value ?? profile.session_value);
+    
+    // For shift payment with period: morning/afternoon = 1x value, full_day = 2x value
+    let sessionValue: number;
+    let actualCount = count;
+    
+    if (paymentType === 'shift') {
+      const baseShiftValue = clinic?.shift_value ?? 0;
+      if (shiftPeriod === 'full_day') {
+        sessionValue = baseShiftValue * 2; // Full day = 2x shift value
+        actualCount = 2; // Count as 2 shifts
+      } else {
+        sessionValue = baseShiftValue;
+        actualCount = 1; // Morning or afternoon = 1 shift
+      }
+    } else {
+      sessionValue = clinic?.session_value ?? profile.session_value;
+    }
     
     const { data, error } = await supabase
       .from('sessions')
       .insert({
         user_id: user.id,
         date: dateStr,
-        count,
+        count: actualCount,
         clinic_id: clinic?.id || null,
         session_value: sessionValue,
         payment_type: paymentType,
+        shift_period: shiftPeriod || null,
       })
       .select()
       .single();

@@ -160,6 +160,7 @@ export type Database = {
           id: string
           payment_type: string | null
           session_value: number | null
+          shift_period: string | null
           user_id: string
         }
         Insert: {
@@ -170,6 +171,7 @@ export type Database = {
           id?: string
           payment_type?: string | null
           session_value?: number | null
+          shift_period?: string | null
           user_id: string
         }
         Update: {
@@ -180,6 +182,7 @@ export type Database = {
           id?: string
           payment_type?: string | null
           session_value?: number | null
+          shift_period?: string | null
           user_id?: string
         }
         Relationships: [

@@ -7,14 +7,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Minus, Plus, Clock, Stethoscope } from "lucide-react";
+import { CalendarIcon, Minus, Plus, Clock, Stethoscope, Sun, Moon, SunMoon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Clinic } from "@/types/clinic";
+import { Clinic, ShiftPeriod } from "@/types/clinic";
 
 interface AddSessionSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddSession: (date: Date, count: number, clinicId?: string) => Promise<any>;
+  onAddSession: (date: Date, count: number, clinicId?: string, shiftPeriod?: ShiftPeriod) => Promise<any>;
   sessionValue: number;
   clinics: Clinic[];
   defaultClinic: Clinic | null;
@@ -33,6 +33,7 @@ export function AddSessionSheet({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedClinicId, setSelectedClinicId] = useState<string | undefined>(undefined);
+  const [selectedShiftPeriod, setSelectedShiftPeriod] = useState<ShiftPeriod>('morning');
   const { toast } = useToast();
 
   // Reset selected clinic when sheet opens
@@ -41,15 +42,18 @@ export function AddSessionSheet({
       setSelectedClinicId(defaultClinic?.id);
       setCount(1);
       setSelectedDate(new Date());
+      setSelectedShiftPeriod('morning');
     }
   }, [open, defaultClinic]);
 
   const selectedClinic = clinics.find(c => c.id === selectedClinicId);
   const isShiftPayment = selectedClinic?.payment_type === 'shift';
   
-  // For shift payment, value is fixed; for session payment, multiply by count
+  // For shift payment, calculate based on period; for session payment, multiply by count
   const currentValue = isShiftPayment 
-    ? (selectedClinic?.shift_value ?? 0)
+    ? selectedShiftPeriod === 'full_day' 
+      ? (selectedClinic?.shift_value ?? 0) * 2 
+      : (selectedClinic?.shift_value ?? 0)
     : (selectedClinic?.session_value ?? sessionValue) * count;
 
   const formatCurrency = (amount: number) => {
@@ -59,14 +63,23 @@ export function AddSessionSheet({
     }).format(amount);
   };
 
+  const getShiftPeriodLabel = (period: ShiftPeriod): string => {
+    switch (period) {
+      case 'morning': return 'Manhã';
+      case 'afternoon': return 'Tarde';
+      case 'full_day': return 'Dia inteiro';
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const result = await onAddSession(selectedDate, count, selectedClinicId);
+      const shiftPeriod = isShiftPayment ? selectedShiftPeriod : undefined;
+      const result = await onAddSession(selectedDate, count, selectedClinicId, shiftPeriod);
       if (result) {
         const clinicName = selectedClinic?.name ? ` (${selectedClinic.name})` : '';
         const message = isShiftPayment
-          ? `1 turno registrado com ${count} ${count === 1 ? 'sessão' : 'sessões'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}${clinicName}`
+          ? `Turno da ${getShiftPeriodLabel(selectedShiftPeriod).toLowerCase()} registrado para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}${clinicName}`
           : `${count} ${count === 1 ? 'sessão adicionada' : 'sessões adicionadas'} para ${format(selectedDate, "d 'de' MMMM", { locale: ptBR })}${clinicName}`;
         
         toast({
@@ -74,6 +87,7 @@ export function AddSessionSheet({
           description: message,
         });
         setCount(1);
+        setSelectedShiftPeriod('morning');
         onOpenChange(false);
       } else {
         toast({
@@ -90,14 +104,15 @@ export function AddSessionSheet({
   const handleQuickAdd = async () => {
     setIsSubmitting(true);
     try {
-      const result = await onAddSession(new Date(), 1, defaultClinic?.id);
+      const isDefaultShift = defaultClinic?.payment_type === 'shift';
+      // Quick add uses 'morning' as default shift period
+      const result = await onAddSession(new Date(), 1, defaultClinic?.id, isDefaultShift ? 'morning' : undefined);
       if (result) {
         const clinicName = defaultClinic?.name ? ` (${defaultClinic.name})` : '';
-        const isDefaultShift = defaultClinic?.payment_type === 'shift';
         toast({
           title: isDefaultShift ? "Turno registrado!" : "Sessão registrada!",
           description: isDefaultShift 
-            ? `1 turno registrado para hoje${clinicName}`
+            ? `Turno da manhã registrado para hoje${clinicName}`
             : `1 sessão adicionada para hoje${clinicName}`,
         });
         onOpenChange(false);
@@ -141,12 +156,12 @@ export function AddSessionSheet({
             {isSubmitting ? (
               <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
             ) : defaultClinic?.payment_type === 'shift' ? (
-              <Clock className="h-5 w-5 mr-2" />
+              <Sun className="h-5 w-5 mr-2" />
             ) : (
               <Plus className="h-5 w-5 mr-2" />
             )}
             {defaultClinic?.payment_type === 'shift' 
-              ? "Adicionar 1 turno agora"
+              ? "Adicionar turno da manhã agora"
               : "Adicionar 1 sessão agora"
             }
             {defaultClinic && (
@@ -280,44 +295,125 @@ export function AddSessionSheet({
             </Popover>
           </div>
 
-          {/* Count Selector - Different UI for shift vs session */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              {isShiftPayment ? "Sessões realizadas no turno" : "Quantidade de sessões"}
-            </label>
-            
-            {isShiftPayment && (
-              <p className="text-xs text-muted-foreground">
-                O valor do turno é fixo. Informe quantas sessões você realizou (opcional, para controle)
-              </p>
-            )}
-            
-            <div className="flex items-center justify-center gap-6 py-4">
-              <Button
-                variant="outline"
-                size="icon-lg"
-                onClick={() => setCount(Math.max(1, count - 1))}
-                disabled={count <= 1}
-              >
-                <Minus className="h-6 w-6" />
-              </Button>
-              <div className="text-center min-w-[100px]">
-                <span className="text-5xl font-bold text-foreground tabular-nums">
-                  {count}
-                </span>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {count === 1 ? 'sessão' : 'sessões'}
-                </p>
+          {/* Shift Period Selector - Only for shift payment type */}
+          {isShiftPayment ? (
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-muted-foreground">
+                Período do turno
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Morning */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedShiftPeriod('morning')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                    selectedShiftPeriod === 'morning'
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-muted/30 hover:bg-muted/50"
+                  )}
+                >
+                  <Sun className={cn(
+                    "h-7 w-7 mb-2",
+                    selectedShiftPeriod === 'morning' ? "text-primary" : "text-amber-500"
+                  )} />
+                  <span className={cn(
+                    "text-sm font-medium",
+                    selectedShiftPeriod === 'morning' ? "text-primary" : "text-foreground"
+                  )}>
+                    Manhã
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {formatCurrency(selectedClinic?.shift_value ?? 0)}
+                  </span>
+                </button>
+
+                {/* Afternoon */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedShiftPeriod('afternoon')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                    selectedShiftPeriod === 'afternoon'
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-muted/30 hover:bg-muted/50"
+                  )}
+                >
+                  <Moon className={cn(
+                    "h-7 w-7 mb-2",
+                    selectedShiftPeriod === 'afternoon' ? "text-primary" : "text-blue-500"
+                  )} />
+                  <span className={cn(
+                    "text-sm font-medium",
+                    selectedShiftPeriod === 'afternoon' ? "text-primary" : "text-foreground"
+                  )}>
+                    Tarde
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {formatCurrency(selectedClinic?.shift_value ?? 0)}
+                  </span>
+                </button>
+
+                {/* Full Day */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedShiftPeriod('full_day')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                    selectedShiftPeriod === 'full_day'
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-muted/30 hover:bg-muted/50"
+                  )}
+                >
+                  <SunMoon className={cn(
+                    "h-7 w-7 mb-2",
+                    selectedShiftPeriod === 'full_day' ? "text-primary" : "text-purple-500"
+                  )} />
+                  <span className={cn(
+                    "text-sm font-medium",
+                    selectedShiftPeriod === 'full_day' ? "text-primary" : "text-foreground"
+                  )}>
+                    Integral
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {formatCurrency((selectedClinic?.shift_value ?? 0) * 2)}
+                  </span>
+                </button>
               </div>
-              <Button
-                variant="outline"
-                size="icon-lg"
-                onClick={() => setCount(count + 1)}
-              >
-                <Plus className="h-6 w-6" />
-              </Button>
             </div>
-          </div>
+          ) : (
+            /* Session Count Selector - For session payment type */
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                Quantidade de sessões
+              </label>
+              <div className="flex items-center justify-center gap-6 py-4">
+                <Button
+                  variant="outline"
+                  size="icon-lg"
+                  onClick={() => setCount(Math.max(1, count - 1))}
+                  disabled={count <= 1}
+                >
+                  <Minus className="h-6 w-6" />
+                </Button>
+                <div className="text-center min-w-[100px]">
+                  <span className="text-5xl font-bold text-foreground tabular-nums">
+                    {count}
+                  </span>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {count === 1 ? 'sessão' : 'sessões'}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon-lg"
+                  onClick={() => setCount(count + 1)}
+                >
+                  <Plus className="h-6 w-6" />
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Value Preview */}
           <div className={cn(
@@ -328,7 +424,9 @@ export function AddSessionSheet({
               <>
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Clock className="h-4 w-4 text-primary" />
-                  <p className="text-sm text-muted-foreground">Valor do turno (fixo)</p>
+                  <p className="text-sm text-muted-foreground">
+                    Valor do turno ({getShiftPeriodLabel(selectedShiftPeriod).toLowerCase()})
+                  </p>
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(currentValue)}
@@ -352,7 +450,7 @@ export function AddSessionSheet({
             disabled={isSubmitting}
           >
             {isSubmitting ? "Salvando..." : isShiftPayment 
-              ? `Registrar turno (${count} ${count === 1 ? 'sessão' : 'sessões'})`
+              ? `Registrar turno da ${getShiftPeriodLabel(selectedShiftPeriod).toLowerCase()}`
               : `Registrar ${count} ${count === 1 ? 'sessão' : 'sessões'}`
             }
           </Button>
