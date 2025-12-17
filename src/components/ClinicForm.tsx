@@ -79,12 +79,12 @@ export function ClinicForm({ open, onOpenChange, onSave, clinic, isOnlyClinic }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{clinic ? "Editar Clínica" : "Nova Clínica"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="space-y-5 py-4 overflow-y-auto flex-1 pr-2">
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="clinic-name">Nome da clínica</Label>
@@ -217,7 +217,7 @@ export function ClinicForm({ open, onOpenChange, onSave, clinic, isOnlyClinic }:
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
