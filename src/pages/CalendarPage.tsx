@@ -3,8 +3,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { SessionCalendar } from "@/components/SessionCalendar";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Clock, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Clinic } from "@/types/clinic";
 
@@ -15,10 +16,13 @@ interface SessionRecord {
   created_at: string;
   clinic_id: string | null;
   session_value: number | null;
+  payment_type?: 'session' | 'shift' | null;
 }
 
 interface CalendarPageProps {
   hasSessionsOnDate: (date: Date) => boolean;
+  hasShiftsOnDate: (date: Date) => boolean;
+  hasMixedOnDate: (date: Date) => boolean;
   getSessionsForDate: (date: Date) => SessionRecord[];
   getTotalForDate: (date: Date) => number;
   addSession: (date: Date, count: number) => void;
@@ -30,6 +34,8 @@ interface CalendarPageProps {
 
 export function CalendarPage({
   hasSessionsOnDate,
+  hasShiftsOnDate,
+  hasMixedOnDate,
   getSessionsForDate,
   getTotalForDate,
   addSession,
@@ -44,9 +50,13 @@ export function CalendarPage({
   const sessions = selectedDate ? getSessionsForDate(selectedDate) : [];
   const totalSessions = selectedDate ? getTotalForDate(selectedDate) : 0;
   
-  // Calculate total value based on individual session values
+  // Calculate total value based on individual session values and payment types
   const totalValue = sessions.reduce((sum, session) => {
     const value = session.session_value ?? sessionValue;
+    // For shifts, the stored value IS the total; for sessions, multiply
+    if (session.payment_type === 'shift') {
+      return sum + value;
+    }
     return sum + (session.count * value);
   }, 0);
 
@@ -98,7 +108,29 @@ export function CalendarPage({
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
             hasSessionsOnDate={hasSessionsOnDate}
+            hasShiftsOnDate={hasShiftsOnDate}
+            hasMixedOnDate={hasMixedOnDate}
           />
+          
+          {/* Legend */}
+          <div className="mt-4 pt-3 border-t border-border">
+            <p className="text-xs text-muted-foreground mb-2">Legenda:</p>
+            <div className="flex flex-wrap gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                <span className="text-muted-foreground">Sessões</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="text-muted-foreground">Turnos</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                <span className="h-2 w-2 rounded-full bg-blue-500 -ml-1" />
+                <span className="text-muted-foreground">Ambos</span>
+              </div>
+            </div>
+          </div>
         </Card>
 
         {/* Selected Date Info */}
@@ -163,10 +195,25 @@ export function CalendarPage({
                           </span>
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium text-foreground">
-                              {session.count} {session.count === 1 ? 'sessão' : 'sessões'}
+                              {session.payment_type === 'shift' 
+                                ? `${session.count} ${session.count === 1 ? 'turno' : 'turnos'}`
+                                : `${session.count} ${session.count === 1 ? 'sessão' : 'sessões'}`
+                              }
                             </p>
+                            {/* Payment type badge */}
+                            {session.payment_type === 'shift' ? (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] px-1.5 py-0">
+                                <Clock className="h-2.5 w-2.5 mr-0.5" />
+                                Turno
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">
+                                <Users className="h-2.5 w-2.5 mr-0.5" />
+                                Sessão
+                              </Badge>
+                            )}
                             {clinic && (
                               <span 
                                 className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full"
@@ -184,7 +231,7 @@ export function CalendarPage({
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {formatCurrency(session.count * sessionVal)}
+                            {formatCurrency(session.payment_type === 'shift' ? sessionVal : session.count * sessionVal)}
                           </p>
                         </div>
                       </div>

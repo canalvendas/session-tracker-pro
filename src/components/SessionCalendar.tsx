@@ -6,6 +6,8 @@ interface SessionCalendarProps {
   selected?: Date;
   onSelect: (date: Date | undefined) => void;
   hasSessionsOnDate: (date: Date) => boolean;
+  hasShiftsOnDate?: (date: Date) => boolean;
+  hasMixedOnDate?: (date: Date) => boolean;
   className?: string;
 }
 
@@ -13,6 +15,8 @@ export function SessionCalendar({
   selected, 
   onSelect, 
   hasSessionsOnDate,
+  hasShiftsOnDate,
+  hasMixedOnDate,
   className 
 }: SessionCalendarProps) {
   return (
@@ -23,10 +27,20 @@ export function SessionCalendar({
       locale={ptBR}
       className={cn("pointer-events-auto", className)}
       modifiers={{
-        hasSession: (date) => hasSessionsOnDate(date),
+        // Only sessions (green dot)
+        hasSessionOnly: (date) => hasSessionsOnDate(date) && !hasShiftsOnDate?.(date),
+        // Only shifts (blue dot)
+        hasShiftOnly: (date) => hasShiftsOnDate?.(date) && !hasMixedOnDate?.(date) && !hasSessionsOnDate(date) || (hasShiftsOnDate?.(date) && !hasMixedOnDate?.(date)),
+        // Mixed: both types (two dots)
+        hasMixed: (date) => hasMixedOnDate?.(date) ?? false,
       }}
       modifiersClassNames={{
-        hasSession: "bg-primary/20 text-primary font-semibold relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+        // Green dot for sessions
+        hasSessionOnly: "bg-primary/20 text-primary font-semibold relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-primary",
+        // Blue dot for shifts
+        hasShiftOnly: "bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-blue-500",
+        // Two dots for mixed (green + blue)
+        hasMixed: "bg-gradient-to-br from-primary/20 to-blue-500/20 font-semibold relative after:absolute after:bottom-1 after:left-[calc(50%-4px)] after:h-1.5 after:w-1.5 after:rounded-full after:bg-primary before:absolute before:bottom-1 before:left-[calc(50%+2px)] before:h-1.5 before:w-1.5 before:rounded-full before:bg-blue-500",
       }}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
