@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { haptics } from "@/lib/haptics";
 import { CalendarIcon, Minus, Plus, Clock, Stethoscope, Sun, Moon, SunMoon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Clinic, ShiftPeriod } from "@/types/clinic";
@@ -305,7 +306,7 @@ export function AddSessionSheet({
                 {/* Morning */}
                 <button
                   type="button"
-                  onClick={() => setSelectedShiftPeriod('morning')}
+                  onClick={() => { haptics.light(); setSelectedShiftPeriod('morning'); }}
                   className={cn(
                     "relative flex flex-col items-center justify-center p-4 rounded-xl border-2",
                     "transition-all duration-300 ease-out",
@@ -338,7 +339,7 @@ export function AddSessionSheet({
                 {/* Afternoon */}
                 <button
                   type="button"
-                  onClick={() => setSelectedShiftPeriod('afternoon')}
+                  onClick={() => { haptics.light(); setSelectedShiftPeriod('afternoon'); }}
                   className={cn(
                     "relative flex flex-col items-center justify-center p-4 rounded-xl border-2",
                     "transition-all duration-300 ease-out",
@@ -371,7 +372,7 @@ export function AddSessionSheet({
                 {/* Full Day */}
                 <button
                   type="button"
-                  onClick={() => setSelectedShiftPeriod('full_day')}
+                  onClick={() => { haptics.light(); setSelectedShiftPeriod('full_day'); }}
                   className={cn(
                     "relative flex flex-col items-center justify-center p-4 rounded-xl border-2",
                     "transition-all duration-300 ease-out",
@@ -412,7 +413,7 @@ export function AddSessionSheet({
                 <Button
                   variant="outline"
                   size="icon-lg"
-                  onClick={() => setCount(Math.max(1, count - 1))}
+                  onClick={() => { haptics.light(); setCount(Math.max(1, count - 1)); }}
                   disabled={count <= 1}
                   className={cn(
                     "transition-all duration-200 ease-out",
@@ -439,7 +440,7 @@ export function AddSessionSheet({
                 <Button
                   variant="outline"
                   size="icon-lg"
-                  onClick={() => setCount(count + 1)}
+                  onClick={() => { haptics.light(); setCount(count + 1); }}
                   className={cn(
                     "transition-all duration-200 ease-out",
                     "hover:scale-110 active:scale-90",
