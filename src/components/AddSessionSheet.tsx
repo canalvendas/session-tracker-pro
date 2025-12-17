@@ -137,14 +137,14 @@ export function AddSessionSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-10">
-        <SheetHeader className="mb-6">
+      <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-10 max-h-[90vh] flex flex-col">
+        <SheetHeader className="mb-6 flex-shrink-0">
           <SheetTitle className="text-xl">
             {isShiftPayment ? "Registrar Turno" : "Registrar Sessões"}
           </SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto flex-1 pr-2">
           {/* Quick Add Button */}
           <Button 
             variant="accent" 
@@ -441,8 +441,10 @@ export function AddSessionSheet({
               </>
             )}
           </div>
+        </div>
 
-          {/* Submit Button */}
+        {/* Submit Button - Fixed at bottom */}
+        <div className="flex-shrink-0 pt-4">
           <Button 
             size="xl" 
             className="w-full"
