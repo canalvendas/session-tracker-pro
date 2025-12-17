@@ -48,6 +48,8 @@ function AppContent() {
     getYearlyHistory,
     updateSettings,
     hasSessionsOnDate,
+    hasShiftsOnDate,
+    hasMixedOnDate,
     isLoaded,
     addClinic,
     updateClinic,
@@ -127,6 +129,8 @@ function AppContent() {
           element={
             <CalendarPage
               hasSessionsOnDate={hasSessionsOnDate}
+              hasShiftsOnDate={hasShiftsOnDate}
+              hasMixedOnDate={hasMixedOnDate}
               getSessionsForDate={getSessionsForDate}
               getTotalForDate={getTotalForDate}
               addSession={addSession}

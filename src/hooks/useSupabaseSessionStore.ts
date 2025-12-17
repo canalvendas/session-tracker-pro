@@ -367,6 +367,21 @@ export function useSupabaseSessionStore(user: User | null) {
     return getSessionsForDate(date).reduce((sum, s) => sum + s.count, 0);
   }, [getSessionsForDate]);
 
+  // Check if date has shift-type sessions
+  const hasShiftsOnDate = useCallback((date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return sessions.some(s => s.date === dateStr && s.payment_type === 'shift');
+  }, [sessions]);
+
+  // Check if date has both session and shift types (mixed)
+  const hasMixedOnDate = useCallback((date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dateSessions = sessions.filter(s => s.date === dateStr);
+    const hasShift = dateSessions.some(s => s.payment_type === 'shift');
+    const hasSession = dateSessions.some(s => s.payment_type !== 'shift');
+    return hasShift && hasSession;
+  }, [sessions]);
+
   const getStats = useCallback((referenceDate: Date = new Date()): Stats => {
     const today = format(referenceDate, 'yyyy-MM-dd');
     const weekStart = startOfWeek(referenceDate, { weekStartsOn: profile.week_starts_on });
@@ -593,6 +608,8 @@ export function useSupabaseSessionStore(user: User | null) {
     getYearlyHistory,
     updateSettings,
     hasSessionsOnDate,
+    hasShiftsOnDate,
+    hasMixedOnDate,
     // Clinic functions
     addClinic,
     updateClinic,
