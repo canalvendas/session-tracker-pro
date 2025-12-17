@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Clinic, ClinicFormData } from "@/types/clinic";
+import { Clinic, ClinicFormData, PaymentType } from "@/types/clinic";
+import { cn } from "@/lib/utils";
 
 const CLINIC_COLORS = [
   "#3d8b7d", // Teal (default)
@@ -28,6 +29,8 @@ interface ClinicFormProps {
 export function ClinicForm({ open, onOpenChange, onSave, clinic, isOnlyClinic }: ClinicFormProps) {
   const [name, setName] = useState("");
   const [sessionValue, setSessionValue] = useState("40");
+  const [shiftValue, setShiftValue] = useState("200");
+  const [paymentType, setPaymentType] = useState<PaymentType>("session");
   const [color, setColor] = useState(CLINIC_COLORS[0]);
   const [isDefault, setIsDefault] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,25 +39,35 @@ export function ClinicForm({ open, onOpenChange, onSave, clinic, isOnlyClinic }:
     if (clinic) {
       setName(clinic.name);
       setSessionValue(clinic.session_value.toString());
+      setShiftValue(clinic.shift_value?.toString() || "200");
+      setPaymentType(clinic.payment_type || "session");
       setColor(clinic.color);
       setIsDefault(clinic.is_default);
     } else {
       setName("");
       setSessionValue("40");
+      setShiftValue("200");
+      setPaymentType("session");
       setColor(CLINIC_COLORS[0]);
       setIsDefault(false);
     }
   }, [clinic, open]);
 
   const handleSubmit = async () => {
-    const value = parseFloat(sessionValue);
-    if (!name.trim() || isNaN(value) || value <= 0) return;
+    const sessionVal = parseFloat(sessionValue);
+    const shiftVal = parseFloat(shiftValue);
+    
+    if (!name.trim()) return;
+    if (paymentType === "session" && (isNaN(sessionVal) || sessionVal <= 0)) return;
+    if (paymentType === "shift" && (isNaN(shiftVal) || shiftVal <= 0)) return;
 
     setIsSubmitting(true);
     try {
       await onSave({
         name: name.trim(),
-        session_value: value,
+        session_value: sessionVal || 0,
+        shift_value: shiftVal || 0,
+        payment_type: paymentType,
         color,
         is_default: isDefault || isOnlyClinic || false,
       });
@@ -62,13 +75,6 @@ export function ClinicForm({ open, onOpenChange, onSave, clinic, isOnlyClinic }:
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(amount);
   };
 
   return (
@@ -91,24 +97,87 @@ export function ClinicForm({ open, onOpenChange, onSave, clinic, isOnlyClinic }:
             />
           </div>
 
-          {/* Session Value */}
+          {/* Payment Type Toggle */}
           <div className="space-y-2">
-            <Label htmlFor="session-value">Valor da sessão</Label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                R$
-              </span>
-              <Input
-                id="session-value"
-                type="number"
-                value={sessionValue}
-                onChange={(e) => setSessionValue(e.target.value)}
-                className="pl-12 h-12 text-lg font-semibold"
-                min="0"
-                step="0.01"
-              />
+            <Label>Tipo de pagamento</Label>
+            <div className="flex rounded-xl bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => setPaymentType("session")}
+                className={cn(
+                  "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                  paymentType === "session"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Por sessão
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentType("shift")}
+                className={cn(
+                  "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                  paymentType === "shift"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Por turno
+              </button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {paymentType === "session" 
+                ? "Valor calculado por quantidade de sessões realizadas"
+                : "Valor fixo por turno de trabalho, independente do número de sessões"
+              }
+            </p>
           </div>
+
+          {/* Session Value - Only show when payment type is session */}
+          {paymentType === "session" && (
+            <div className="space-y-2">
+              <Label htmlFor="session-value">Valor por sessão</Label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  R$
+                </span>
+                <Input
+                  id="session-value"
+                  type="number"
+                  value={sessionValue}
+                  onChange={(e) => setSessionValue(e.target.value)}
+                  className="pl-12 h-12 text-lg font-semibold"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Shift Value - Only show when payment type is shift */}
+          {paymentType === "shift" && (
+            <div className="space-y-2">
+              <Label htmlFor="shift-value">Valor do turno</Label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  R$
+                </span>
+                <Input
+                  id="shift-value"
+                  type="number"
+                  value={shiftValue}
+                  onChange={(e) => setShiftValue(e.target.value)}
+                  className="pl-12 h-12 text-lg font-semibold"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Este valor será registrado independente do número de sessões
+              </p>
+            </div>
+          )}
 
           {/* Color */}
           <div className="space-y-2">
