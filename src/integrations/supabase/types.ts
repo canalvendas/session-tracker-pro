@@ -64,6 +64,7 @@ export type Database = {
           professional_id: string
           reference_month: number
           reference_year: number
+          seen_by_professional: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -76,6 +77,7 @@ export type Database = {
           professional_id: string
           reference_month: number
           reference_year: number
+          seen_by_professional?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -88,6 +90,7 @@ export type Database = {
           professional_id?: string
           reference_month?: number
           reference_year?: number
+          seen_by_professional?: boolean | null
           updated_at?: string | null
         }
         Relationships: [

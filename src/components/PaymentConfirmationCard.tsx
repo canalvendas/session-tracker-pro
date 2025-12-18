@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, Sparkles, CreditCard, ChevronRight } from "lucide-react";
@@ -14,6 +14,7 @@ interface Payment {
   reference_month: number;
   reference_year: number;
   notes: string | null;
+  seen_by_professional: boolean;
 }
 
 interface PaymentConfirmationCardProps {
@@ -29,6 +30,8 @@ export function PaymentConfirmationCard({ userId }: PaymentConfirmationCardProps
   const navigate = useNavigate();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNew, setIsNew] = useState(false);
+  const markedAsSeenRef = useRef(false);
 
   useEffect(() => {
     const fetchLatestPayment = async () => {
@@ -56,7 +59,9 @@ export function PaymentConfirmationCard({ userId }: PaymentConfirmationCardProps
         if (error) throw error;
 
         if (payments && payments.length > 0) {
-          setPayment(payments[0] as Payment);
+          const latestPayment = payments[0] as Payment;
+          setPayment(latestPayment);
+          setIsNew(!latestPayment.seen_by_professional);
         }
       } catch (error) {
         console.error("Error fetching payment:", error);
@@ -69,6 +74,26 @@ export function PaymentConfirmationCard({ userId }: PaymentConfirmationCardProps
       fetchLatestPayment();
     }
   }, [userId]);
+
+  // Mark as seen after 2 seconds
+  useEffect(() => {
+    if (payment && isNew && !markedAsSeenRef.current) {
+      const timer = setTimeout(async () => {
+        try {
+          markedAsSeenRef.current = true;
+          await supabase
+            .from("professional_payments")
+            .update({ seen_by_professional: true })
+            .eq("id", payment.id);
+          setIsNew(false);
+        } catch (error) {
+          console.error("Error marking payment as seen:", error);
+        }
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [payment, isNew]);
 
   if (loading || !payment) {
     return null;
@@ -90,6 +115,14 @@ export function PaymentConfirmationCard({ userId }: PaymentConfirmationCardProps
 
   return (
     <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+      {/* "NOVO" Badge */}
+      {isNew && (
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500 animate-pulse shadow-lg">
+          <Sparkles className="h-3 w-3 text-white" />
+          <span className="text-xs font-bold text-white">NOVO</span>
+        </div>
+      )}
+
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
       <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl" />
