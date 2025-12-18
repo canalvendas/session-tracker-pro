@@ -9,6 +9,7 @@ import { MotivationalMessage } from "@/components/MotivationalMessage";
 import { PremiumStatCard, UnitType } from "@/components/PremiumStatCard";
 import { AddSessionSheet } from "@/components/AddSessionSheet";
 import { IndependenceBanner } from "@/components/IndependenceBanner";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { Clinic, ShiftPeriod } from "@/types/clinic";
 
@@ -141,6 +142,11 @@ export function Dashboard({
             onRegisterSession={() => setIsAddSessionOpen(true)}
             showPayments={true}
           />
+
+          {/* Push Notification Prompt */}
+          {userId && (
+            <PushNotificationPrompt userId={userId} />
+          )}
 
           {/* Payment Confirmation Card */}
           {userId && (
