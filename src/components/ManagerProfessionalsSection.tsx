@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Copy, Eye, UserPlus, RefreshCw, Check, AlertTriangle } from "lucide-react";
+import { Users, Eye, UserPlus, RefreshCw, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RegisterProfessionalSheet } from "./RegisterProfessionalSheet";
@@ -19,8 +19,6 @@ interface Professional {
 export function ManagerProfessionalsSection() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inviteCode, setInviteCode] = useState("");
-  const [copied, setCopied] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [maxProfessionals, setMaxProfessionals] = useState(10);
   const [professionalsCount, setProfessionalsCount] = useState(0);
@@ -33,17 +31,6 @@ export function ManagerProfessionalsSection() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Buscar código de convite (profile id do gestor)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (profile) {
-        // Usar os primeiros 8 caracteres do UUID como código
-        setInviteCode(profile.id.substring(0, 8).toUpperCase());
-      }
 
       // Buscar profissionais vinculados via edge function
       const response = await fetch(
@@ -80,23 +67,6 @@ export function ManagerProfessionalsSection() {
     fetchProfessionals();
   }, []);
 
-  const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteCode);
-      setCopied(true);
-      toast({
-        title: "Código copiado!",
-        description: "Envie para o profissional se cadastrar",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast({
-        title: "Erro ao copiar",
-        description: "Tente copiar manualmente",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleViewHistory = (userId: string) => {
     navigate(`/manager/professional/${userId}`);
@@ -156,30 +126,6 @@ export function ManagerProfessionalsSection() {
           )}
         </div>
 
-        {/* Código de Convite */}
-        <div className="p-3 rounded-xl bg-muted/50 mb-4">
-          <p className="text-xs text-muted-foreground mb-2">Código de Convite</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 font-mono text-lg font-bold text-primary tracking-wider">
-              {inviteCode || '...'}
-            </code>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyCode}
-              disabled={!inviteCode}
-            >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Compartilhe este código com seus profissionais para vinculação
-          </p>
-        </div>
 
         {/* Lista de Profissionais */}
         {loading ? (

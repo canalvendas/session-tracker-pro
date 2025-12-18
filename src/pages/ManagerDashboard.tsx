@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   RefreshCw, Users, TrendingUp, DollarSign, ChevronRight, User, 
-  UserPlus, Copy, FileText, CreditCard, BarChart3, Sparkles,
-  Calendar
+  UserPlus, FileText, CreditCard, BarChart3, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,7 +42,6 @@ export function ManagerDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [managerName, setManagerName] = useState<string | null>(null);
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [showRegisterSheet, setShowRegisterSheet] = useState(false);
 
   // Get greeting based on time of day
@@ -60,14 +58,12 @@ export function ManagerDashboard() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, id')
+          .select('full_name')
           .eq('user_id', user.id)
           .single();
         
         if (profile) {
           setManagerName(profile.full_name);
-          // Use profile id as invite code (first 8 chars)
-          setInviteCode(profile.id.substring(0, 8).toUpperCase());
         }
       }
     } catch (error) {
@@ -148,15 +144,6 @@ export function ManagerDashboard() {
     }).format(value);
   };
 
-  const copyInviteCode = () => {
-    if (inviteCode) {
-      navigator.clipboard.writeText(inviteCode);
-      toast({
-        title: "Código copiado!",
-        description: "Compartilhe com seus profissionais",
-      });
-    }
-  };
 
   const averageSessionsPerProfessional = summaryData && summaryData.total_professionals > 0
     ? Math.round(summaryData.grand_total_sessions / summaryData.total_professionals)
@@ -295,39 +282,14 @@ export function ManagerDashboard() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Ações Rápidas
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50 border-border/50 hover:bg-primary/10 hover:border-primary/30"
-                  onClick={() => setShowRegisterSheet(true)}
-                >
-                  <UserPlus className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-medium">Novo Profissional</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50 border-border/50 hover:bg-blue-500/10 hover:border-blue-500/30"
-                  onClick={copyInviteCode}
-                >
-                  <Copy className="h-5 w-5 text-blue-500" />
-                  <span className="text-xs font-medium">Copiar Código</span>
-                </Button>
-              </div>
-
-              {/* Invite Code Display */}
-              {inviteCode && (
-                <div 
-                  onClick={copyInviteCode}
-                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/30 cursor-pointer hover:bg-secondary/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-xs text-muted-foreground">Código de convite:</span>
-                  </div>
-                  <span className="font-mono font-bold text-primary">{inviteCode}</span>
-                </div>
-              )}
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50 border-border/50 hover:bg-primary/10 hover:border-primary/30"
+                onClick={() => setShowRegisterSheet(true)}
+              >
+                <UserPlus className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">Novo Profissional</span>
+              </Button>
             </div>
 
             {/* Professionals List */}
@@ -362,20 +324,6 @@ export function ManagerDashboard() {
                       Cadastrar Primeiro Profissional
                     </Button>
                     
-                    {inviteCode && (
-                      <div className="mt-6 pt-6 border-t border-border/30">
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Ou compartilhe seu código de convite:
-                        </p>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); copyInviteCode(); }}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 hover:bg-secondary transition-colors"
-                        >
-                          <span className="font-mono font-bold text-primary">{inviteCode}</span>
-                          <Copy className="h-3 w-3 text-muted-foreground" />
-                        </button>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ) : (
