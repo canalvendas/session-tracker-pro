@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, RefreshCw, Users, UserCheck, UserX, Ban, Shield, Building, UserCog, Link2, Unlink } from "lucide-react";
+import { ArrowLeft, Check, RefreshCw, Users, UserCheck, UserX, Ban, Shield, Building, UserCog, Link2, Unlink, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +61,7 @@ interface Manager {
   full_name: string | null;
   email: string;
   professionals_count: number;
+  max_professionals: number;
 }
 
 export function AdminPage() {
@@ -74,6 +77,8 @@ export function AdminPage() {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [userToAssignManager, setUserToAssignManager] = useState<UserProfile | null>(null);
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
+  const [managerToEditLimit, setManagerToEditLimit] = useState<Manager | null>(null);
+  const [newLimit, setNewLimit] = useState<number>(10);
 
   const fetchPendingUsers = async () => {
     try {
@@ -315,6 +320,44 @@ export function AdminPage() {
     }
   };
 
+  const setProfessionalLimit = async (userId: string, limit: number) => {
+    setActionLoading(userId);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=set-professional-limit`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, limit }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to set professional limit');
+      }
+
+      toast({
+        title: "Limite atualizado!",
+        description: `O gestor agora pode ter até ${limit} profissionais.`,
+      });
+
+      await refreshData();
+    } catch (error) {
+      console.error('Error setting professional limit:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o limite.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+      setManagerToEditLimit(null);
+    }
+  };
+
   const getRoleBadge = (roles: string[]) => {
     if (roles.includes('admin')) return <Badge variant="destructive">Admin</Badge>;
     if (roles.includes('manager')) return <Badge className="bg-blue-600 hover:bg-blue-700">Gestor</Badge>;
@@ -437,26 +480,58 @@ export function AdminPage() {
     </Card>
   );
 
-  const ManagerCard = ({ manager }: { manager: Manager }) => (
-    <Card className="bg-card/80 border-border/50">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-blue-500/20">
-              <Building className="h-5 w-5 text-blue-500" />
+  const ManagerCard = ({ manager }: { manager: Manager }) => {
+    const usagePercentage = Math.round((manager.professionals_count / manager.max_professionals) * 100);
+    const isAtLimit = manager.professionals_count >= manager.max_professionals;
+
+    return (
+      <Card className="bg-card/80 border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="p-2 rounded-full bg-blue-500/20">
+                <Building className="h-5 w-5 text-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground truncate">{manager.full_name || 'Sem nome'}</p>
+                <p className="text-sm text-muted-foreground truncate">{manager.email}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-foreground">{manager.full_name || 'Sem nome'}</p>
-              <p className="text-sm text-muted-foreground">{manager.email}</p>
+            <div className="flex items-center gap-2">
+              <div className="text-right">
+                <Badge 
+                  variant={isAtLimit ? "destructive" : "secondary"} 
+                  className={isAtLimit ? "" : "bg-primary/20 text-primary"}
+                >
+                  {manager.professionals_count}/{manager.max_professionals}
+                </Badge>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {usagePercentage}% usado
+                </p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setManagerToEditLimit(manager);
+                        setNewLimit(manager.max_professionals);
+                      }}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Editar limite</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-primary/20 text-primary">
-            {manager.professionals_count} profissional{manager.professionals_count !== 1 ? 'is' : ''}
-          </Badge>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen gradient-surface pb-24">
@@ -699,6 +774,49 @@ export function AdminPage() {
                 <Link2 className="h-4 w-4 mr-2" />
               )}
               Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar limite de profissionais */}
+      <Dialog open={!!managerToEditLimit} onOpenChange={(open) => !open && setManagerToEditLimit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Limite de Profissionais</DialogTitle>
+            <DialogDescription>
+              Defina quantos profissionais {managerToEditLimit?.full_name || managerToEditLimit?.email} pode cadastrar.
+              <br />
+              <span className="text-xs">
+                Atualmente usando: {managerToEditLimit?.professionals_count || 0} de {managerToEditLimit?.max_professionals || 10}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="limit">Limite de profissionais</Label>
+            <Input
+              id="limit"
+              type="number"
+              min={1}
+              max={1000}
+              value={newLimit}
+              onChange={(e) => setNewLimit(Math.max(1, parseInt(e.target.value) || 1))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagerToEditLimit(null)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => managerToEditLimit && setProfessionalLimit(managerToEditLimit.user_id, newLimit)}
+              disabled={actionLoading === managerToEditLimit?.user_id}
+            >
+              {actionLoading === managerToEditLimit?.user_id ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>

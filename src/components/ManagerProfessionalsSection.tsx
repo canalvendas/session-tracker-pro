@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Copy, Eye, UserPlus, RefreshCw, Check } from "lucide-react";
+import { Users, Copy, Eye, UserPlus, RefreshCw, Check, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RegisterProfessionalSheet } from "./RegisterProfessionalSheet";
+import { Progress } from "@/components/ui/progress";
 
 interface Professional {
   id: string;
@@ -21,6 +22,8 @@ export function ManagerProfessionalsSection() {
   const [inviteCode, setInviteCode] = useState("");
   const [copied, setCopied] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [maxProfessionals, setMaxProfessionals] = useState(10);
+  const [professionalsCount, setProfessionalsCount] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -59,6 +62,8 @@ export function ManagerProfessionalsSection() {
 
       const result = await response.json();
       setProfessionals(result.professionals || []);
+      setMaxProfessionals(result.max_professionals || 10);
+      setProfessionalsCount(result.professionals_count || 0);
     } catch (error) {
       console.error('Error fetching professionals:', error);
       toast({
@@ -102,6 +107,9 @@ export function ManagerProfessionalsSection() {
     setIsSheetOpen(false);
   };
 
+  const usagePercentage = Math.round((professionalsCount / maxProfessionals) * 100);
+  const isAtLimit = professionalsCount >= maxProfessionals;
+
   return (
     <>
       <Card variant="elevated">
@@ -127,6 +135,25 @@ export function ManagerProfessionalsSection() {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
+        </div>
+
+        {/* Contador de Limite */}
+        <div className={`p-3 rounded-xl mb-4 ${isAtLimit ? 'bg-destructive/10 border border-destructive/20' : 'bg-muted/50'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">Cadastros utilizados</p>
+            <span className={`text-sm font-semibold ${isAtLimit ? 'text-destructive' : 'text-foreground'}`}>
+              {professionalsCount} de {maxProfessionals}
+            </span>
+          </div>
+          <Progress value={usagePercentage} className="h-2" />
+          {isAtLimit && (
+            <div className="flex items-center gap-2 mt-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <p className="text-xs">
+                Limite atingido. Entre em contato para ampliar seu plano.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Código de Convite */}
@@ -201,13 +228,19 @@ export function ManagerProfessionalsSection() {
 
         {/* Botão Cadastrar */}
         <Button
-          variant="outline"
+          variant={isAtLimit ? "outline" : "default"}
           className="w-full"
           onClick={() => setIsSheetOpen(true)}
+          disabled={isAtLimit}
         >
           <UserPlus className="h-4 w-4 mr-2" />
-          Cadastrar Novo Profissional
+          {isAtLimit ? "Limite Atingido" : "Cadastrar Novo Profissional"}
         </Button>
+        {isAtLimit && (
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            Entre em contato pelo WhatsApp para ampliar seu plano
+          </p>
+        )}
       </Card>
 
       <RegisterProfessionalSheet

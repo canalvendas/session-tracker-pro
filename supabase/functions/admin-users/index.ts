@@ -168,7 +168,7 @@ serve(async (req) => {
 
       const { data: managers, error: fetchError } = await supabaseAdmin
         .from('profiles')
-        .select('id, user_id, full_name, is_paid, created_at')
+        .select('id, user_id, full_name, is_paid, created_at, max_professionals')
         .in('user_id', managerUserIds);
 
       if (fetchError) throw fetchError;
@@ -185,7 +185,8 @@ serve(async (req) => {
           return {
             ...manager,
             email: authUser?.user?.email || 'Email não disponível',
-            professionals_count: count || 0
+            professionals_count: count || 0,
+            max_professionals: manager.max_professionals || 10
           };
         })
       );
@@ -373,6 +374,42 @@ serve(async (req) => {
       }
 
       console.log('Manager assigned successfully');
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // POST: Definir limite de profissionais do gestor
+    if (req.method === 'POST' && action === 'set-professional-limit') {
+      const { userId, limit } = await req.json();
+      
+      if (!userId || limit === undefined || limit === null) {
+        return new Response(JSON.stringify({ error: 'userId and limit are required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (typeof limit !== 'number' || limit < 1) {
+        return new Response(JSON.stringify({ error: 'Limit must be a positive number' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Setting professional limit for manager:', userId, limit);
+
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({ max_professionals: limit })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error setting professional limit:', updateError);
+        throw updateError;
+      }
+
+      console.log('Professional limit set successfully:', userId, limit);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
