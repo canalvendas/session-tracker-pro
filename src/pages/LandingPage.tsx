@@ -95,25 +95,25 @@ const testimonials = [
 const steps = [
   {
     number: "01",
-    title: "Efetue o pagamento",
-    description: "Pague R$14,99 mensais via PIX e envie o comprovante"
+    title: "Escolha seu plano",
+    description: "Profissional (R$14,99) ou Gestor (R$24,99)"
   },
   {
     number: "02",
-    title: "Receba seu acesso",
-    description: "Liberamos sua conta em até 24 horas"
+    title: "Pague via PIX",
+    description: "Escaneie o QR Code e envie o comprovante"
   },
   {
     number: "03",
     title: "Comece a usar",
-    description: "Registre sessões e acompanhe resultados"
+    description: "Acesso liberado em até 24 horas"
   }
 ];
 
 const faqs = [
   {
     question: "Qual o valor do TeraDay?",
-    answer: "O TeraDay custa R$14,99 por mês via PIX. Você terá acesso a todas as funcionalidades enquanto sua assinatura estiver ativa."
+    answer: "Oferecemos dois planos: Profissional Independente por R$14,99/mês (ideal para terapeutas autônomos) e Gestor por R$24,99/mês (para quem gerencia uma equipe de até 10 profissionais)."
   },
   {
     question: "Como funciona o pagamento?",
@@ -137,19 +137,49 @@ const faqs = [
   }
 ];
 
-const benefits = [
-  "Dashboard em tempo real",
-  "Calendário interativo",
-  "Histórico completo",
-  "Relatórios em PDF",
-  "Modo escuro/claro",
-  "Dados na nuvem",
-  "PWA mobile",
-  "Suporte incluso"
+const plans = [
+  {
+    name: "Profissional Independente",
+    price: 14.99,
+    description: "Para terapeutas autônomos",
+    features: [
+      "Dashboard em tempo real",
+      "Calendário interativo",
+      "Histórico completo",
+      "Relatórios em PDF",
+      "Modo escuro/claro",
+      "Dados na nuvem",
+      "PWA mobile",
+      "Suporte incluso"
+    ],
+    highlight: false
+  },
+  {
+    name: "Gestor",
+    price: 24.99,
+    description: "Gerencie sua equipe",
+    features: [
+      "Tudo do plano Profissional",
+      "Cadastrar até 10 profissionais",
+      "Dashboard consolidado",
+      "Visualizar sessões da equipe",
+      "Registrar pagamentos",
+      "Relatórios por profissional",
+      "Notificações de pagamento",
+      "Suporte prioritário"
+    ],
+    highlight: true
+  }
 ];
 
 export function LandingPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState({ name: "Profissional Independente", amount: 14.99 });
+
+  const handleSelectPlan = (planName: string, amount: number) => {
+    setSelectedPlan({ name: planName, amount });
+    setIsPaymentModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0f0d] text-white overflow-x-hidden">
@@ -185,7 +215,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
             <Leaf className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary">Apenas R$14,99/mês</span>
+            <span className="text-sm text-primary">A partir de R$14,99/mês</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
@@ -202,14 +232,15 @@ export function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto"
-              onClick={() => setIsPaymentModalOpen(true)}
-            >
-              Assinar Agora - R$14,99/mês
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+            <a href="#planos">
+              <Button 
+                size="lg" 
+                className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto"
+              >
+                Ver Planos
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </a>
             <a href="#funcionalidades">
               <Button size="lg" variant="outline" className="border-gray-700 text-white hover:bg-white/5 px-8 py-6 text-lg w-full sm:w-auto">
                 Ver Funcionalidades
@@ -348,52 +379,74 @@ export function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="relative z-10 px-6 py-24">
-        <div className="max-w-4xl mx-auto">
+      <section id="planos" className="relative z-10 px-6 py-24">
+        <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Plano
-              <span className="text-primary"> Mensal</span>
+              Escolha seu
+              <span className="text-primary"> Plano</span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Acesso completo por apenas R$14,99 mensais.
+              Planos pensados para profissionais autônomos e gestores de equipe
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/40 border border-primary/30 rounded-2xl p-8 md:p-12 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-primary text-white text-sm font-medium px-4 py-1 rounded-bl-lg">
-              Plano Mensal
-            </div>
-            
-            <div className="text-center mb-8">
-              <div className="flex items-baseline justify-center gap-2 mb-2">
-                <span className="text-5xl md:text-6xl font-bold">R$ 14,99</span>
-                <span className="text-gray-400">/ mês</span>
-              </div>
-              <p className="text-gray-400">Pagamento via PIX</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-primary" />
-                  </div>
-                  <span className="text-gray-300">{benefit}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center">
-              <Button 
-                size="lg" 
-                className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
-                onClick={() => setIsPaymentModalOpen(true)}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            {plans.map((plan, index) => (
+              <div 
+                key={index}
+                className={`bg-gradient-to-br from-gray-900/80 to-gray-900/40 rounded-2xl p-6 md:p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
+                  plan.highlight 
+                    ? 'border-2 border-primary shadow-lg shadow-primary/20' 
+                    : 'border border-gray-800'
+                }`}
               >
-                Assinar Agora
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </div>
+                {plan.highlight && (
+                  <div className="absolute top-0 right-0 bg-primary text-white text-xs font-medium px-3 py-1 rounded-bl-lg">
+                    Mais Popular
+                  </div>
+                )}
+                
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
+                  <p className="text-gray-400 text-sm">{plan.description}</p>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl md:text-5xl font-bold">R$ {plan.price.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-gray-400">/ mês</span>
+                  </div>
+                  <p className="text-gray-500 text-sm mt-1">Pagamento via PIX</p>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  {plan.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        plan.highlight ? 'bg-primary/20' : 'bg-gray-800'
+                      }`}>
+                        <Check className={`w-3 h-3 ${plan.highlight ? 'text-primary' : 'text-gray-400'}`} />
+                      </div>
+                      <span className="text-gray-300 text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Button 
+                  size="lg" 
+                  className={`w-full py-6 text-base ${
+                    plan.highlight 
+                      ? 'bg-primary hover:bg-primary/90 text-white' 
+                      : 'bg-gray-800 hover:bg-gray-700 text-white'
+                  }`}
+                  onClick={() => handleSelectPlan(plan.name, plan.price)}
+                >
+                  Assinar Agora
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -443,14 +496,15 @@ export function LandingPage() {
             Junte-se a centenas de terapeutas que já simplificaram sua rotina com o TeraDay.
           </p>
           
-          <Button 
-            size="lg" 
-            className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
-            onClick={() => setIsPaymentModalOpen(true)}
-          >
-            Assinar Agora - R$14,99/mês
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
+          <a href="#planos">
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg"
+            >
+              Ver Planos
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </a>
         </div>
       </section>
 
@@ -476,7 +530,9 @@ export function LandingPage() {
       <Suspense fallback={null}>
         <PixPaymentModal 
           open={isPaymentModalOpen} 
-          onOpenChange={setIsPaymentModalOpen} 
+          onOpenChange={setIsPaymentModalOpen}
+          planName={selectedPlan.name}
+          amount={selectedPlan.amount}
         />
       </Suspense>
     </div>
