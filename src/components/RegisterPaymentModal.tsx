@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { DollarSign, Calendar, FileText, Loader2 } from "lucide-react";
+import { haptics } from "@/lib/haptics";
 import {
   Dialog,
   DialogContent,
@@ -178,6 +179,9 @@ export function RegisterPaymentModal({
           title: "Pagamento registrado",
           description: `Pagamento de R$ ${numAmount.toFixed(2)} registrado com sucesso.`,
         });
+
+        // Vibração de confirmação para o gestor
+        haptics.success();
       }
 
       onSuccess();
