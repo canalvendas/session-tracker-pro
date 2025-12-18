@@ -68,7 +68,7 @@ serve(async (req) => {
       // Buscar profile do gestor
       const { data: managerProfile, error: managerError } = await supabaseAdmin
         .from('profiles')
-        .select('id')
+        .select('id, max_professionals')
         .eq('user_id', user.id)
         .single();
 
@@ -101,7 +101,40 @@ serve(async (req) => {
       );
 
       console.log(`Found ${professionalsWithEmail.length} linked professionals`);
-      return new Response(JSON.stringify({ professionals: professionalsWithEmail }), {
+      return new Response(JSON.stringify({ 
+        professionals: professionalsWithEmail,
+        max_professionals: managerProfile.max_professionals || 10,
+        professionals_count: professionalsWithEmail.length
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // GET: Obter limite de profissionais do gestor
+    if (req.method === 'GET' && action === 'get-limit') {
+      console.log('Fetching professional limit for manager:', user.id);
+      
+      const { data: managerProfile, error: managerError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, max_professionals')
+        .eq('user_id', user.id)
+        .single();
+
+      if (managerError || !managerProfile) {
+        console.error('Error fetching manager profile:', managerError);
+        throw new Error('Manager profile not found');
+      }
+
+      // Contar profissionais vinculados
+      const { count } = await supabaseAdmin
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('manager_id', managerProfile.id);
+
+      return new Response(JSON.stringify({ 
+        max_professionals: managerProfile.max_professionals || 10,
+        professionals_count: count || 0
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -479,16 +512,40 @@ serve(async (req) => {
         });
       }
 
-      // Buscar profile do gestor
+      // Buscar profile do gestor com limite
       const { data: managerProfile, error: managerError } = await supabaseAdmin
         .from('profiles')
-        .select('id')
+        .select('id, max_professionals')
         .eq('user_id', user.id)
         .single();
 
       if (managerError || !managerProfile) {
         console.error('Error fetching manager profile:', managerError);
         throw new Error('Manager profile not found');
+      }
+
+      // Verificar limite de profissionais
+      const maxProfessionals = managerProfile.max_professionals || 10;
+      const { count: currentCount } = await supabaseAdmin
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('manager_id', managerProfile.id);
+
+      const professionalCount = currentCount || 0;
+      
+      console.log(`Professional limit check: ${professionalCount}/${maxProfessionals}`);
+
+      if (professionalCount >= maxProfessionals) {
+        console.log('Professional limit reached for manager:', user.id);
+        return new Response(JSON.stringify({ 
+          error: `Você atingiu o limite de ${maxProfessionals} profissionais do seu plano. Entre em contato pelo WhatsApp para contratar mais vagas.`,
+          code: 'LIMIT_REACHED',
+          current: professionalCount,
+          max: maxProfessionals
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // Criar usuário no auth

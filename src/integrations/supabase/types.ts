@@ -114,6 +114,7 @@ export type Database = {
           id: string
           is_paid: boolean
           manager_id: string | null
+          max_professionals: number | null
           session_value: number
           updated_at: string
           user_id: string
@@ -125,6 +126,7 @@ export type Database = {
           id?: string
           is_paid?: boolean
           manager_id?: string | null
+          max_professionals?: number | null
           session_value?: number
           updated_at?: string
           user_id: string
@@ -136,6 +138,7 @@ export type Database = {
           id?: string
           is_paid?: boolean
           manager_id?: string | null
+          max_professionals?: number | null
           session_value?: number
           updated_at?: string
           user_id?: string

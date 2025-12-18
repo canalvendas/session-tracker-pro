@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, Loader2, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 
 interface RegisterProfessionalSheetProps {
@@ -34,6 +34,7 @@ export function RegisterProfessionalSheet({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
+  const [limitError, setLimitError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const validate = () => {
@@ -63,6 +64,7 @@ export function RegisterProfessionalSheet({
     if (!validate()) return;
 
     setLoading(true);
+    setLimitError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -88,6 +90,11 @@ export function RegisterProfessionalSheet({
       const result = await response.json();
 
       if (!response.ok) {
+        // Verificar se é erro de limite
+        if (result.code === 'LIMIT_REACHED' || response.status === 403) {
+          setLimitError(result.error || 'Você atingiu o limite de profissionais do seu plano.');
+          return;
+        }
         throw new Error(result.error || 'Erro ao cadastrar profissional');
       }
 
@@ -101,6 +108,7 @@ export function RegisterProfessionalSheet({
       setEmail("");
       setPassword("");
       setErrors({});
+      setLimitError(null);
       
       onSuccess();
     } catch (error) {
@@ -121,6 +129,7 @@ export function RegisterProfessionalSheet({
       setEmail("");
       setPassword("");
       setErrors({});
+      setLimitError(null);
     }
     onOpenChange(open);
   };
@@ -135,6 +144,26 @@ export function RegisterProfessionalSheet({
           </SheetDescription>
         </SheetHeader>
 
+        {limitError && (
+          <div className="mb-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-destructive">Limite atingido</p>
+                <p className="text-xs text-destructive/80 mt-1">{limitError}</p>
+                <a 
+                  href="https://wa.me/5581986953506?text=Olá! Gostaria de ampliar meu plano TeraDay para cadastrar mais profissionais."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 text-xs text-primary underline hover:no-underline"
+                >
+                  Falar com suporte via WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="prof-name">Nome completo</Label>
@@ -147,7 +176,7 @@ export function RegisterProfessionalSheet({
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="pl-10 h-12"
-                disabled={loading}
+                disabled={loading || !!limitError}
               />
             </div>
             {errors.fullName && (
@@ -166,7 +195,7 @@ export function RegisterProfessionalSheet({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 h-12"
-                disabled={loading}
+                disabled={loading || !!limitError}
               />
             </div>
             {errors.email && (
@@ -185,12 +214,13 @@ export function RegisterProfessionalSheet({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 pr-10 h-12"
-                disabled={loading}
+                disabled={loading || !!limitError}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                disabled={loading || !!limitError}
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -211,7 +241,7 @@ export function RegisterProfessionalSheet({
             type="submit"
             size="lg"
             className="w-full mt-6"
-            disabled={loading}
+            disabled={loading || !!limitError}
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
