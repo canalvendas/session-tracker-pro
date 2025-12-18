@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CalendarCheck, TrendingUp, Wallet } from "lucide-react";
 import { PaymentConfirmationCard } from "@/components/PaymentConfirmationCard";
 import { LinkedProfessionalHeader } from "@/components/LinkedProfessionalHeader";
@@ -6,7 +6,7 @@ import { IndependentProfessionalHeader } from "@/components/IndependentProfessio
 import { DailyProgressRing } from "@/components/DailyProgressRing";
 import { QuickActionsGrid } from "@/components/QuickActionsGrid";
 import { MotivationalMessage } from "@/components/MotivationalMessage";
-import { PremiumStatCard } from "@/components/PremiumStatCard";
+import { PremiumStatCard, UnitType } from "@/components/PremiumStatCard";
 import { AddSessionSheet } from "@/components/AddSessionSheet";
 import { IndependenceBanner } from "@/components/IndependenceBanner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,9 +14,9 @@ import { Clinic, ShiftPeriod } from "@/types/clinic";
 
 interface DashboardProps {
   stats: {
-    daily: { sessions: number; value: number };
-    weekly: { sessions: number; value: number };
-    monthly: { sessions: number; value: number };
+    daily: { sessions: number; shifts: number; value: number };
+    weekly: { sessions: number; shifts: number; value: number };
+    monthly: { sessions: number; shifts: number; value: number };
   };
   therapistName?: string | null;
   userId?: string;
@@ -41,6 +41,18 @@ export function Dashboard({
   const [managerName, setManagerName] = useState<string | null>(null);
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   
+  // Determine unit type based on clinics
+  const unitType: UnitType = useMemo(() => {
+    if (!clinics.length) return 'sessions';
+    
+    const hasSessionClinics = clinics.some(c => c.payment_type === 'session');
+    const hasShiftClinics = clinics.some(c => c.payment_type === 'shift');
+    
+    if (hasSessionClinics && hasShiftClinics) return 'mixed';
+    if (hasShiftClinics) return 'shifts';
+    return 'sessions';
+  }, [clinics]);
+
   // Fetch manager name for linked professionals
   useEffect(() => {
     const fetchManagerName = async () => {
@@ -84,10 +96,12 @@ export function Dashboard({
           <PremiumStatCard
             title="Hoje"
             sessions={stats.daily.sessions}
+            shifts={stats.daily.shifts}
             value={stats.daily.value}
             icon={CalendarCheck}
             variant="primary"
             size="large"
+            unitType={unitType}
           />
 
           {/* Week and Month Grid */}
@@ -95,23 +109,32 @@ export function Dashboard({
             <PremiumStatCard
               title="Esta semana"
               sessions={stats.weekly.sessions}
+              shifts={stats.weekly.shifts}
               value={stats.weekly.value}
               icon={TrendingUp}
               variant="blue"
               size="small"
+              unitType={unitType}
             />
             <PremiumStatCard
               title="Este mês"
               sessions={stats.monthly.sessions}
+              shifts={stats.monthly.shifts}
               value={stats.monthly.value}
               icon={Wallet}
               variant="emerald"
               size="small"
+              unitType={unitType}
             />
           </div>
 
           {/* Daily Progress Ring */}
-          <DailyProgressRing currentSessions={stats.daily.sessions} goalSessions={5} />
+          <DailyProgressRing 
+            currentSessions={stats.daily.sessions} 
+            currentShifts={stats.daily.shifts}
+            goalSessions={5}
+            unitType={unitType}
+          />
 
           {/* Quick Actions */}
           <QuickActionsGrid 
@@ -126,7 +149,7 @@ export function Dashboard({
 
           {/* Motivational Message */}
           <MotivationalMessage 
-            dailySessions={stats.daily.sessions}
+            dailySessions={stats.daily.sessions + stats.daily.shifts}
             weeklyValue={stats.weekly.value}
           />
         </main>
@@ -157,10 +180,12 @@ export function Dashboard({
         <PremiumStatCard
           title="Hoje"
           sessions={stats.daily.sessions}
+          shifts={stats.daily.shifts}
           value={stats.daily.value}
           icon={CalendarCheck}
           variant="emerald"
           size="large"
+          unitType={unitType}
         />
 
         {/* Week and Month Grid */}
@@ -168,23 +193,32 @@ export function Dashboard({
           <PremiumStatCard
             title="Esta semana"
             sessions={stats.weekly.sessions}
+            shifts={stats.weekly.shifts}
             value={stats.weekly.value}
             icon={TrendingUp}
             variant="blue"
             size="small"
+            unitType={unitType}
           />
           <PremiumStatCard
             title="Este mês"
             sessions={stats.monthly.sessions}
+            shifts={stats.monthly.shifts}
             value={stats.monthly.value}
             icon={Wallet}
             variant="primary"
             size="small"
+            unitType={unitType}
           />
         </div>
 
         {/* Daily Progress Ring */}
-        <DailyProgressRing currentSessions={stats.daily.sessions} goalSessions={5} />
+        <DailyProgressRing 
+          currentSessions={stats.daily.sessions}
+          currentShifts={stats.daily.shifts}
+          goalSessions={5}
+          unitType={unitType}
+        />
 
         {/* Quick Actions */}
         <QuickActionsGrid 
@@ -194,7 +228,7 @@ export function Dashboard({
 
         {/* Motivational Message */}
         <MotivationalMessage 
-          dailySessions={stats.daily.sessions}
+          dailySessions={stats.daily.sessions + stats.daily.shifts}
           weeklyValue={stats.weekly.value}
         />
 

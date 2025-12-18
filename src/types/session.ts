@@ -19,14 +19,17 @@ export interface Settings {
 export interface Stats {
   daily: {
     sessions: number;
+    shifts: number;
     value: number;
   };
   weekly: {
     sessions: number;
+    shifts: number;
     value: number;
   };
   monthly: {
     sessions: number;
+    shifts: number;
     value: number;
   };
 }

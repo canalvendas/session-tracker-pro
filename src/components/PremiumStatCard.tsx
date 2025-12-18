@@ -1,28 +1,47 @@
 import { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
+export type UnitType = 'sessions' | 'shifts' | 'mixed';
+
 interface PremiumStatCardProps {
   title: string;
   sessions: number;
+  shifts?: number;
   value: number;
   icon: LucideIcon;
   variant?: "primary" | "blue" | "emerald";
   size?: "large" | "small";
+  unitType?: UnitType;
 }
 
 export function PremiumStatCard({ 
   title, 
   sessions, 
+  shifts = 0,
   value, 
   icon: Icon, 
   variant = "primary",
-  size = "small" 
+  size = "small",
+  unitType = "sessions"
 }: PremiumStatCardProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(amount);
+  };
+
+  const getUnitLabel = () => {
+    if (unitType === 'shifts') {
+      return `${shifts} ${shifts === 1 ? 'turno' : 'turnos'}`;
+    }
+    if (unitType === 'mixed') {
+      const parts = [];
+      if (sessions > 0) parts.push(`${sessions} ${sessions === 1 ? 'sessão' : 'sessões'}`);
+      if (shifts > 0) parts.push(`${shifts} ${shifts === 1 ? 'turno' : 'turnos'}`);
+      return parts.length > 0 ? parts.join(' • ') : '0 sessões';
+    }
+    return `${sessions} ${sessions === 1 ? 'sessão' : 'sessões'}`;
   };
 
   const gradients = {
@@ -73,7 +92,7 @@ export function PremiumStatCard({
               {formatCurrency(value)}
             </p>
             <p className="text-sm text-muted-foreground">
-              {sessions} {sessions === 1 ? 'sessão' : 'sessões'}
+              {getUnitLabel()}
             </p>
           </div>
         </div>
@@ -103,7 +122,7 @@ export function PremiumStatCard({
           {formatCurrency(value)}
         </p>
         <p className="text-xs text-muted-foreground">
-          {sessions} {sessions === 1 ? 'sessão' : 'sessões'}
+          {getUnitLabel()}
         </p>
       </div>
     </Card>
