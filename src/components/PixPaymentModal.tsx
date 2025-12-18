@@ -12,16 +12,18 @@ import { toast } from "@/hooks/use-toast";
 interface PixPaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  planName?: string;
+  amount?: number;
 }
 
 const PIX_KEY = "pixmusetera@gmail.com";
 const WHATSAPP_NUMBER = "5581986953506";
 const MERCHANT_NAME = "TERADAY";
 const MERCHANT_CITY = "RECIFE";
-const AMOUNT = 14.99;
+const DEFAULT_AMOUNT = 14.99;
 
 // Função para gerar payload PIX no formato EMV/BRCode
-function generatePixPayload(): string {
+function generatePixPayload(amount: number): string {
   const formatField = (id: string, value: string): string => {
     const length = value.length.toString().padStart(2, '0');
     return `${id}${length}${value}`;
@@ -36,7 +38,7 @@ function generatePixPayload(): string {
   const payloadFormatIndicator = formatField('00', '01');
   const merchantCategoryCode = formatField('52', '0000');
   const transactionCurrency = formatField('53', '986');
-  const transactionAmount = formatField('54', AMOUNT.toFixed(2));
+  const transactionAmount = formatField('54', amount.toFixed(2));
   const countryCode = formatField('58', 'BR');
   const merchantName = formatField('59', MERCHANT_NAME.substring(0, 25));
   const merchantCity = formatField('60', MERCHANT_CITY.substring(0, 15));
@@ -85,7 +87,7 @@ function calculateCRC16(payload: string): string {
 }
 
 // Componente de QR Code com tratamento de erro e tamanho responsivo
-function SafeQRCode() {
+function SafeQRCode({ amount }: { amount: number }) {
   const [hasError, setHasError] = useState(false);
   const [QRCodeComponent, setQRCodeComponent] = useState<React.ComponentType<any> | null>(null);
   const [qrSize, setQrSize] = useState(140);
@@ -123,7 +125,7 @@ function SafeQRCode() {
   try {
     return (
       <QRCodeComponent
-        value={generatePixPayload()}
+        value={generatePixPayload(amount)}
         size={qrSize}
         level="M"
         includeMargin={false}
@@ -139,7 +141,7 @@ function SafeQRCode() {
   }
 }
 
-export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
+export function PixPaymentModal({ open, onOpenChange, planName = "Profissional Independente", amount = DEFAULT_AMOUNT }: PixPaymentModalProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyPix = async () => {
@@ -162,7 +164,7 @@ export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      "Olá! Acabei de efetuar o pagamento da assinatura mensal do TeraDay (R$14,99). Segue o comprovante:"
+      `Olá! Acabei de efetuar o pagamento do plano ${planName} do TeraDay (R$${amount.toFixed(2).replace('.', ',')}). Segue o comprovante:`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
   };
@@ -180,17 +182,17 @@ export function PixPaymentModal({ open, onOpenChange }: PixPaymentModalProps) {
           {/* QR Code */}
           <div className="flex flex-col items-center">
             <div className="bg-white p-2 sm:p-4 rounded-xl">
-              <SafeQRCode />
+              <SafeQRCode amount={amount} />
             </div>
             <p className="text-gray-400 text-xs sm:text-sm mt-2 sm:mt-3 text-center px-2">
               Escaneie o QR Code com seu app de banco
             </p>
           </div>
 
-          {/* Valor */}
+          {/* Valor e Plano */}
           <div className="text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-primary">R$ 14,99</p>
-            <p className="text-gray-400 text-xs sm:text-sm">Assinatura Mensal</p>
+            <p className="text-2xl sm:text-3xl font-bold text-primary">R$ {amount.toFixed(2).replace('.', ',')}</p>
+            <p className="text-gray-400 text-xs sm:text-sm">{planName}</p>
           </div>
 
           {/* Chave PIX */}
