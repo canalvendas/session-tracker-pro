@@ -331,7 +331,7 @@ serve(async (req) => {
       // Verificar se o profissional está vinculado ao gestor
       const { data: professionalProfile } = await supabaseAdmin
         .from('profiles')
-        .select('id, manager_id')
+        .select('id, manager_id, user_id, full_name')
         .eq('id', professionalId)
         .single();
 
@@ -363,6 +363,34 @@ serve(async (req) => {
       }
 
       console.log('Payment registered successfully:', payment.id);
+
+      // Send push notification to professional
+      try {
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        
+        const pushResponse = await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            userId: professionalProfile.user_id,
+            title: '💰 Pagamento Recebido!',
+            body: `R$ ${Number(amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ref. ${monthNames[referenceMonth - 1]}/${referenceYear}`,
+            url: '/pagamentos',
+            tag: 'payment-received',
+          }),
+        });
+
+        const pushResult = await pushResponse.json();
+        console.log('Push notification result:', pushResult);
+      } catch (pushError) {
+        // Don't fail the payment registration if push fails
+        console.error('Error sending push notification:', pushError);
+      }
+
       return new Response(JSON.stringify({ success: true, payment }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
