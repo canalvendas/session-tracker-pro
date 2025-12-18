@@ -32,9 +32,9 @@ interface Profile {
 }
 
 interface Stats {
-  daily: { sessions: number; value: number };
-  weekly: { sessions: number; value: number };
-  monthly: { sessions: number; value: number };
+  daily: { sessions: number; shifts: number; value: number };
+  weekly: { sessions: number; shifts: number; value: number };
+  monthly: { sessions: number; shifts: number; value: number };
 }
 
 interface DayRecord {
@@ -424,36 +424,52 @@ export function useSupabaseSessionStore(user: User | null) {
     const monthEnd = endOfMonth(referenceDate);
 
     let dailySessions = 0;
+    let dailyShifts = 0;
     let dailyValue = 0;
     let weeklySessions = 0;
+    let weeklyShifts = 0;
     let weeklyValue = 0;
     let monthlySessions = 0;
+    let monthlyShifts = 0;
     let monthlyValue = 0;
 
     sessions.forEach(session => {
       const sessionDate = parseISO(session.date);
       const totalValue = getSessionTotalValue(session);
+      const isShift = session.payment_type === 'shift';
       
       if (session.date === today) {
-        dailySessions += session.count;
+        if (isShift) {
+          dailyShifts += session.count;
+        } else {
+          dailySessions += session.count;
+        }
         dailyValue += totalValue;
       }
       
       if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
-        weeklySessions += session.count;
+        if (isShift) {
+          weeklyShifts += session.count;
+        } else {
+          weeklySessions += session.count;
+        }
         weeklyValue += totalValue;
       }
       
       if (isWithinInterval(sessionDate, { start: monthStart, end: monthEnd })) {
-        monthlySessions += session.count;
+        if (isShift) {
+          monthlyShifts += session.count;
+        } else {
+          monthlySessions += session.count;
+        }
         monthlyValue += totalValue;
       }
     });
 
     return {
-      daily: { sessions: dailySessions, value: dailyValue },
-      weekly: { sessions: weeklySessions, value: weeklyValue },
-      monthly: { sessions: monthlySessions, value: monthlyValue },
+      daily: { sessions: dailySessions, shifts: dailyShifts, value: dailyValue },
+      weekly: { sessions: weeklySessions, shifts: weeklyShifts, value: weeklyValue },
+      monthly: { sessions: monthlySessions, shifts: monthlyShifts, value: monthlyValue },
     };
   }, [sessions, profile, getSessionTotalValue]);
 

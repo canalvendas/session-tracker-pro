@@ -116,14 +116,17 @@ export function useSessionStore() {
     return {
       daily: {
         sessions: dailySessions,
+        shifts: 0,
         value: dailySessions * settings.sessionValue,
       },
       weekly: {
         sessions: weeklySessions,
+        shifts: 0,
         value: weeklySessions * settings.sessionValue,
       },
       monthly: {
         sessions: monthlySessions,
+        shifts: 0,
         value: monthlySessions * settings.sessionValue,
       },
     };

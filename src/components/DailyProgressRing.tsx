@@ -1,22 +1,64 @@
 import { Target, Flame } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { UnitType } from "./PremiumStatCard";
 
 interface DailyProgressRingProps {
   currentSessions: number;
+  currentShifts?: number;
   goalSessions?: number;
+  unitType?: UnitType;
 }
 
-export function DailyProgressRing({ currentSessions, goalSessions = 5 }: DailyProgressRingProps) {
-  const progress = Math.min((currentSessions / goalSessions) * 100, 100);
+export function DailyProgressRing({ 
+  currentSessions, 
+  currentShifts = 0,
+  goalSessions = 5,
+  unitType = "sessions"
+}: DailyProgressRingProps) {
+  // Calculate total based on unit type
+  const currentTotal = unitType === 'shifts' ? currentShifts : 
+                       unitType === 'mixed' ? currentSessions + currentShifts : 
+                       currentSessions;
+  
+  const progress = Math.min((currentTotal / goalSessions) * 100, 100);
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
-  const remaining = Math.max(goalSessions - currentSessions, 0);
-  const isCompleted = currentSessions >= goalSessions;
+  const remaining = Math.max(goalSessions - currentTotal, 0);
+  const isCompleted = currentTotal >= goalSessions;
+
+  const getUnitWord = (count: number, singular: string, plural: string) => {
+    return count === 1 ? singular : plural;
+  };
 
   const getMessage = () => {
     if (isCompleted) return "Meta alcançada! 🎉";
+    
+    if (unitType === 'shifts') {
+      if (remaining === 1) return "Falta apenas 1 turno!";
+      return `Faltam ${remaining} para sua meta!`;
+    }
+    
+    if (unitType === 'mixed') {
+      if (remaining === 1) return "Falta apenas 1!";
+      return `Faltam ${remaining} para sua meta!`;
+    }
+    
     if (remaining === 1) return "Falta apenas 1 sessão!";
     return `Faltam ${remaining} para sua meta!`;
+  };
+
+  const getProgressLabel = () => {
+    if (unitType === 'shifts') {
+      return `${currentShifts} de ${goalSessions} ${getUnitWord(goalSessions, 'turno', 'turnos')}`;
+    }
+    if (unitType === 'mixed') {
+      const parts = [];
+      if (currentSessions > 0) parts.push(`${currentSessions} ${getUnitWord(currentSessions, 'sessão', 'sessões')}`);
+      if (currentShifts > 0) parts.push(`${currentShifts} ${getUnitWord(currentShifts, 'turno', 'turnos')}`);
+      const currentLabel = parts.length > 0 ? parts.join(' + ') : '0';
+      return `${currentLabel} de ${goalSessions}`;
+    }
+    return `${currentSessions} de ${goalSessions} ${getUnitWord(goalSessions, 'sessão', 'sessões')}`;
   };
 
   return (
@@ -65,7 +107,7 @@ export function DailyProgressRing({ currentSessions, goalSessions = 5 }: DailyPr
               <Flame className="h-8 w-8 text-emerald-500 animate-pulse" />
             ) : (
               <div className="text-center">
-                <span className="text-2xl font-bold text-foreground">{currentSessions}</span>
+                <span className="text-2xl font-bold text-foreground">{currentTotal}</span>
                 <span className="text-xs text-muted-foreground">/{goalSessions}</span>
               </div>
             )}
@@ -81,7 +123,7 @@ export function DailyProgressRing({ currentSessions, goalSessions = 5 }: DailyPr
             </span>
           </div>
           <p className="text-lg font-bold text-foreground mb-1">
-            {currentSessions} de {goalSessions} sessões
+            {getProgressLabel()}
           </p>
           <p className={`text-sm font-medium ${isCompleted ? "text-emerald-500" : "text-muted-foreground"}`}>
             {getMessage()}
