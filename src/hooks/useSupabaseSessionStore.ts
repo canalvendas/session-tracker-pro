@@ -66,18 +66,13 @@ export function useSupabaseSessionStore(user: User | null) {
 
     const fetchData = async () => {
       try {
-        // Fetch all data in parallel for better performance
-        const [sessionsResult, clinicsResult, profileResult] = await Promise.all([
+        // First fetch profile and sessions in parallel
+        const [sessionsResult, profileResult] = await Promise.all([
           supabase
             .from('sessions')
             .select('*')
             .eq('user_id', user.id)
             .order('date', { ascending: false }),
-          supabase
-            .from('clinics')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: true }),
           supabase
             .from('profiles')
             .select('session_value, week_starts_on, full_name, is_paid, manager_id')
@@ -88,22 +83,46 @@ export function useSupabaseSessionStore(user: User | null) {
         if (sessionsResult.error) throw sessionsResult.error;
         setSessions((sessionsResult.data || []) as Session[]);
 
-        if (clinicsResult.error) throw clinicsResult.error;
-        setClinics((clinicsResult.data || []) as Clinic[]);
-
         if (profileResult.error && profileResult.error.code !== 'PGRST116') {
           throw profileResult.error;
         }
 
-        if (profileResult.data) {
+        let profileData = profileResult.data;
+        if (profileData) {
           setProfile({
-            session_value: Number(profileResult.data.session_value),
-            week_starts_on: profileResult.data.week_starts_on as 0 | 1,
-            full_name: profileResult.data.full_name,
-            is_paid: profileResult.data.is_paid ?? false,
-            manager_id: profileResult.data.manager_id ?? null,
+            session_value: Number(profileData.session_value),
+            week_starts_on: profileData.week_starts_on as 0 | 1,
+            full_name: profileData.full_name,
+            is_paid: profileData.is_paid ?? false,
+            manager_id: profileData.manager_id ?? null,
           });
         }
+
+        // Determine clinic owner: if linked professional, fetch manager's clinics
+        let clinicOwnerId = user.id;
+        if (profileData?.manager_id) {
+          // Fetch the manager's user_id from their profile id
+          const { data: managerProfile } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('id', profileData.manager_id)
+            .single();
+          
+          if (managerProfile?.user_id) {
+            clinicOwnerId = managerProfile.user_id;
+          }
+        }
+
+        // Fetch clinics from the correct owner
+        const { data: clinicsData, error: clinicsError } = await supabase
+          .from('clinics')
+          .select('*')
+          .eq('user_id', clinicOwnerId)
+          .order('created_at', { ascending: true });
+
+        if (clinicsError) throw clinicsError;
+        setClinics((clinicsData || []) as Clinic[]);
+
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
