@@ -57,6 +57,7 @@ function AppContent() {
     getDefaultClinic,
     getClinicById,
     getClinicBreakdown,
+    getLastSessionDate,
   } = useSupabaseSessionStore(user);
 
   const stats = getStats();
@@ -150,6 +151,7 @@ function AppContent() {
               getYearlyHistory={getYearlyHistory}
               getClinicBreakdown={getClinicBreakdown}
               therapistName={user?.user_metadata?.full_name}
+              getLastSessionDate={getLastSessionDate}
             />
           }
         />

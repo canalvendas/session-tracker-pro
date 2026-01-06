@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, getMonth, getYear, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ interface HistoryPageProps {
   getYearlyHistory: (year: number) => { month: number; sessions: number; value: number }[];
   getClinicBreakdown: (year: number, month: number) => { clinic: Clinic | null; sessions: number; value: number }[];
   therapistName?: string;
+  getLastSessionDate?: () => Date | null;
 }
 
 export function HistoryPage({
@@ -25,9 +26,22 @@ export function HistoryPage({
   getYearlyHistory,
   getClinicBreakdown,
   therapistName,
+  getLastSessionDate,
 }: HistoryPageProps) {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Initialize to the most recent month with sessions
+  useEffect(() => {
+    if (!hasInitialized && getLastSessionDate) {
+      const lastDate = getLastSessionDate();
+      if (lastDate) {
+        setCurrentDate(lastDate);
+      }
+      setHasInitialized(true);
+    }
+  }, [getLastSessionDate, hasInitialized]);
   const [activeTab, setActiveTab] = useState("daily");
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();

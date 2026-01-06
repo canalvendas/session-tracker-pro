@@ -638,6 +638,14 @@ export function useSupabaseSessionStore(user: User | null) {
     return result;
   }, [sessions, clinics, getSessionTotalValue]);
 
+  // Get the date of the most recent session
+  const getLastSessionDate = useCallback((): Date | null => {
+    if (sessions.length === 0) return null;
+    // Sessions are ordered by date descending, so first one is most recent
+    const lastSession = sessions[0];
+    return parseISO(lastSession.date);
+  }, [sessions]);
+
   return {
     sessions,
     clinics,
@@ -667,5 +675,6 @@ export function useSupabaseSessionStore(user: User | null) {
     getDefaultClinic,
     getClinicById,
     getClinicBreakdown,
+    getLastSessionDate,
   };
 }
