@@ -116,6 +116,10 @@ export function HistoryPage({
   const totalMonthSessions = monthlyHistory.reduce((sum, day) => sum + day.sessions, 0);
   const totalMonthValue = monthlyHistory.reduce((sum, day) => sum + day.value, 0);
 
+  // Totais anuais
+  const totalYearSessions = yearlyHistory.reduce((sum, month) => sum + month.sessions, 0);
+  const totalYearValue = yearlyHistory.reduce((sum, month) => sum + month.value, 0);
+
   return (
     <div className="min-h-screen gradient-surface pb-32">
       {/* Header */}
@@ -257,7 +261,19 @@ export function HistoryPage({
             </Card>
           </TabsContent>
 
-          <TabsContent value="yearly" className="mt-0">
+          <TabsContent value="yearly" className="mt-0 space-y-4">
+            {/* Resumo Anual */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card variant="elevated" className="text-center">
+                <p className="text-3xl font-bold text-foreground">{totalYearSessions}</p>
+                <p className="text-xs text-muted-foreground mt-1">sessões em {currentYear}</p>
+              </Card>
+              <Card variant="elevated" className="text-center">
+                <p className="text-3xl font-bold text-primary">{formatCurrency(totalYearValue)}</p>
+                <p className="text-xs text-muted-foreground mt-1">faturamento anual</p>
+              </Card>
+            </div>
+
             <Card variant="elevated">
               <div className="space-y-3">
                 {yearlyHistory.map((monthData) => {
