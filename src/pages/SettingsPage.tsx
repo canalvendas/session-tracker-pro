@@ -107,15 +107,18 @@ export function SettingsPage({
         {/* Manager Professionals Section - Only visible to managers */}
         {isManager && <ManagerProfessionalsSection />}
 
-        {/* Clinic Manager - Hidden for professionals linked to managers */}
-        {!isLinkedProfessional ? (
-          <ClinicManager
-            clinics={clinics}
-            onAdd={onAddClinic}
-            onUpdate={onUpdateClinic}
-            onDelete={onDeleteClinic}
-          />
-        ) : (
+        {/* Clinic Manager - Always visible for independent users (no manager_id) */}
+        {/* Debug: isLinkedProfessional controls visibility */}
+        <ClinicManager
+          clinics={clinics}
+          onAdd={onAddClinic}
+          onUpdate={onUpdateClinic}
+          onDelete={onDeleteClinic}
+          readOnly={isLinkedProfessional}
+        />
+
+        {/* Info message for linked professionals */}
+        {isLinkedProfessional && (
           <Card variant="glass" className="border-primary/20 bg-primary/5">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
