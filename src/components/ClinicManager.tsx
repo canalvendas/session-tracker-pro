@@ -22,9 +22,10 @@ interface ClinicManagerProps {
   onAdd: (data: ClinicFormData) => Promise<Clinic | null>;
   onUpdate: (id: string, data: ClinicFormData) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  readOnly?: boolean;
 }
 
-export function ClinicManager({ clinics, onAdd, onUpdate, onDelete }: ClinicManagerProps) {
+export function ClinicManager({ clinics, onAdd, onUpdate, onDelete, readOnly = false }: ClinicManagerProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [deleteClinic, setDeleteClinic] = useState<Clinic | null>(null);
@@ -134,42 +135,46 @@ export function ClinicManager({ clinics, onAdd, onUpdate, onDelete }: ClinicMana
                   }
                 </span>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleEdit(clinic)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => setDeleteClinic(clinic)}
-                  disabled={clinics.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleEdit(clinic)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => setDeleteClinic(clinic)}
+                    disabled={clinics.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
 
-      {/* Add Button */}
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => {
-          setEditingClinic(null);
-          setFormOpen(true);
-        }}
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Adicionar Clínica
-      </Button>
+      {/* Add Button - Hidden in readOnly mode */}
+      {!readOnly && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            setEditingClinic(null);
+            setFormOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Clínica
+        </Button>
+      )}
 
       {/* Form Dialog */}
       <ClinicForm
