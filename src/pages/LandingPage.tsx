@@ -250,25 +250,36 @@ export function LandingPage() {
             </a>
           </div>
 
-          {/* Dashboard Mockup */}
-          <div className="mt-16 relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d] via-transparent to-transparent z-10" />
-            <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/40 border border-gray-800 rounded-2xl p-6 md:p-8 backdrop-blur-sm max-w-4xl mx-auto">
-              <div className="grid grid-cols-3 gap-4 md:gap-6">
-                <div className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl p-4 md:p-6 border border-primary/20">
-                  <p className="text-gray-400 text-xs md:text-sm mb-1">Hoje</p>
-                  <p className="text-2xl md:text-3xl font-bold text-white">8</p>
-                  <p className="text-primary text-sm md:text-base font-medium">R$ 320</p>
-                </div>
-                <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 rounded-xl p-4 md:p-6 border border-emerald-500/20">
-                  <p className="text-gray-400 text-xs md:text-sm mb-1">Semana</p>
-                  <p className="text-2xl md:text-3xl font-bold text-white">32</p>
-                  <p className="text-emerald-400 text-sm md:text-base font-medium">R$ 1.280</p>
-                </div>
-                <div className="bg-gradient-to-br from-teal-500/20 to-teal-500/5 rounded-xl p-4 md:p-6 border border-teal-500/20">
-                  <p className="text-gray-400 text-xs md:text-sm mb-1">Mês</p>
-                  <p className="text-2xl md:text-3xl font-bold text-white">124</p>
-                  <p className="text-teal-400 text-sm md:text-base font-medium">R$ 4.960</p>
+          {/* Hero Video */}
+          <div className="mt-16 relative max-w-4xl mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d] via-transparent to-transparent z-10 rounded-2xl" />
+            <div className="relative overflow-hidden rounded-2xl border border-gray-800">
+              <video
+                src={heroVideoAsset.url}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-auto object-cover"
+              />
+              {/* Overlay Stats */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-8">
+                <div className="grid grid-cols-3 gap-4 md:gap-6">
+                  <div className="bg-primary/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-primary/20">
+                    <p className="text-gray-300 text-xs md:text-sm mb-1">Hoje</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white">8</p>
+                    <p className="text-primary text-sm md:text-base font-medium">R$ 320</p>
+                  </div>
+                  <div className="bg-emerald-500/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-emerald-500/20">
+                    <p className="text-gray-300 text-xs md:text-sm mb-1">Semana</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white">32</p>
+                    <p className="text-emerald-400 text-sm md:text-base font-medium">R$ 1.280</p>
+                  </div>
+                  <div className="bg-teal-500/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-teal-500/20">
+                    <p className="text-gray-300 text-xs md:text-sm mb-1">Mês</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white">124</p>
+                    <p className="text-teal-400 text-sm md:text-base font-medium">R$ 4.960</p>
+                  </div>
                 </div>
               </div>
             </div>
