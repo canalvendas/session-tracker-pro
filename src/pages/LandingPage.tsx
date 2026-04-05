@@ -1,5 +1,6 @@
 import { useState, Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
+import heroVideoAsset from "@/assets/hero-video.mp4.asset.json";
 import { 
   Leaf, 
   BarChart3, 
