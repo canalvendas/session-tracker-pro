@@ -47,7 +47,13 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         // Import custom service worker for push notifications
         importScripts: ['/custom-sw.js'],
+        navigateFallbackDenylist: [/^\/api/, /supabase/],
         runtimeCaching: [
+          {
+            // Never cache or intercept backend/auth calls
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: "NetworkOnly",
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
