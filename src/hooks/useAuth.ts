@@ -45,22 +45,37 @@ export function useAuth() {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-      return { data, error };
-    } catch (e: any) {
-      // Network/service-worker failures surface as "Failed to fetch"
-      return {
-        data: null,
-        error: {
-          message:
-            'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.',
-        },
-      };
+    const credentials = { email: email.trim().toLowerCase(), password };
+
+    const attempt = async () => {
+      try {
+        return await supabase.auth.signInWithPassword(credentials);
+      } catch (e: any) {
+        return { data: null, error: e };
+      }
+    };
+
+    let { data, error } = await attempt();
+
+    // "Failed to fetch" quase sempre vem de um service worker antigo
+    // interceptando a requisição: limpa e tenta mais uma vez.
+    if (error && /failed to fetch|network/i.test(error.message ?? '')) {
+      await unregisterAllServiceWorkers();
+      ({ data, error } = await attempt());
+
+      if (error && /failed to fetch|network/i.test(error.message ?? '')) {
+        return {
+          data: null,
+          error: {
+            ...error,
+            message:
+              'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.',
+          },
+        };
+      }
     }
+
+    return { data, error };
   }, []);
 
   const signOut = useCallback(async () => {
