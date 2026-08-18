@@ -44,11 +44,22 @@ export function useAuth() {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      return { data, error };
+    } catch (e: any) {
+      // Network/service-worker failures surface as "Failed to fetch"
+      return {
+        data: null,
+        error: {
+          message:
+            'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.',
+        },
+      };
+    }
   }, []);
 
   const signOut = useCallback(async () => {
